@@ -5,7 +5,7 @@
 	<name>SpoutAPI</name>
 	<groupId>org.spout</groupId>
 	<artifactId>spoutapi</artifactId>
-	<version>dev-SNAPSHOT</version>
+	<version>0.1.1-SNAPSHOT</version>
 	<url>http://www.spout.org</url>
 	<inceptionYear>2011</inceptionYear>
 	<description>SpoutAPI is the API framework for the Spout server and client.</description>
