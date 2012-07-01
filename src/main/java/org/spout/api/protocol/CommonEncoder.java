@@ -42,12 +42,6 @@ import org.spout.api.Spout;
 public class CommonEncoder extends PostprocessEncoder {
 	private volatile CodecLookupService codecLookup = null;
 	
-	private final boolean upstream;
-	
-	public CommonEncoder(boolean upstream) {
-		this.upstream = upstream;
-	}
-	
 	@SuppressWarnings("unchecked")
 	@Override
 	protected Object encode(ChannelHandlerContext ctx, Channel c, Object msg) throws Exception {
@@ -71,7 +65,8 @@ public class CommonEncoder extends PostprocessEncoder {
 			} else {
 				opcodeBuf.writeByte(codec.getOpcode());
 			}
-			return ChannelBuffers.wrappedBuffer(opcodeBuf, codec.encode(upstream, message));
+
+			return ChannelBuffers.wrappedBuffer(opcodeBuf, codec.encode(message));
 		}
 		return msg;
 	}

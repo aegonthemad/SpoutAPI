@@ -29,7 +29,6 @@ package org.spout.api.protocol;
 import java.io.Serializable;
 import java.net.InetSocketAddress;
 
-import org.jboss.netty.channel.Channel;
 import org.spout.api.Engine;
 import org.spout.api.map.DefaultedMap;
 import org.spout.api.player.Player;
@@ -38,10 +37,9 @@ public interface Session {
 	/**
 	 * Passes a message to a session for processing.
 	 *
-	 * @param upstream true if the message was received from a server
 	 * @param message message to be processed
 	 */
-	public <T extends Message> void messageReceived(boolean upstream, T message);
+	public <T extends Message> void messageReceived(T message);
 
 	/**
 	 * Disposes of this session by destroying the associated player, if there is
@@ -55,13 +53,6 @@ public interface Session {
 	 * @param protocol the protocol (Bootstrap until set)
 	 */
 	public void setProtocol(Protocol protocol);
-	
-	/**
-	 * Gets the protocol associated with this session.
-	 *
-	 * @return the protocol (Bootstrap until set)
-	 */
-	public Protocol getProtocol();
 
 	/**
 	 * Gets the state of this session.
@@ -79,35 +70,31 @@ public interface Session {
 
 	/**
 	 * Sends a message to the client.
-	 * 
-	 * @param upstream true if the message should be sent to the server
+	 *
 	 * @param message The message.
 	 */
-	public void send(boolean upstream, Message message);
+	public void send(Message message);
 
 	/**
 	 * Sends a message to the client.
 	 *
-	 * @param upstream true if the message should be sent to the server
-	 * @param force if this message is used in the identification stages of communication
 	 * @param message The message.
+	 * @param force if this message is used in the identification stages of communication
 	 */
-	public void send(boolean upstream, boolean force, Message message);
+	public void send(Message message, boolean force);
 
 	/**
 	 * Sends any amount of messages to the client
-	 * @param upstream true if the messages should be sent to the server
 	 * @param messages the messages to send to the client
 	 */
-	public void sendAll(boolean upstream, Message... messages);
+	public void sendAll(Message... messages);
 
 	/**
 	 * Sends any amount of messages to the client.
-	 * @param upstream true if the messages should be sent to the server
 	 * @param force if the messages are used in the identification stages of communication
 	 * @param messages the messages to send to the client
 	 */
-	public void sendAll(boolean upstream, boolean force, Message... messages);
+	public void sendAll(boolean force, Message... messages);
 	/**
 	 * Disconnects the player as a kick. This is equivalent to calling disconnect(reason, true)
 	 * @param reason The reason for disconnection
@@ -144,25 +131,6 @@ public interface Session {
 	 * @return Player
 	 */
 	public Player getPlayer();
-	
-	/**
-	 * Sets aux Channel when operating as a proxy server.
-	 */
-	public void bindAuxChannel(Channel c);
-	
-	/**
-	 * Closes aux Channel when operating as a proxy server
-	 */
-	public void closeAuxChannel();
-	
-	/**
-	 * Checks if a channel is the primary channel.  The primary channel never changes for a Session.  
-	 * An auxiliary channel is used for proxy mode.
-	 * 
-	 * @return the channel to test
-	 * @return true if the channel is the primary channel
-	 */
-	public boolean isPrimary(Channel c);
 
 	/**
 	 * Sets the NetworkSynchronizer associated with this player.<br>

@@ -28,7 +28,7 @@ package org.spout.api.protocol;
 
 import java.util.concurrent.ConcurrentHashMap;
 
-public abstract class Protocol {
+public class Protocol {
 	private static final ConcurrentHashMap<String, Protocol> map = new ConcurrentHashMap<String, Protocol>();
 
 	private final CodecLookupService codecLookup;
@@ -67,30 +67,6 @@ public abstract class Protocol {
 	public String getName() {
 		return name;
 	}
-	
-	/**
-	 * Gets a message for kicking a player
-	 * 
-	 * @param message
-	 * @return
-	 */
-	public abstract Message getKickMessage(String message);
-	
-	/**
-	 * Gets a chat message for a given string 
-	 * 
-	 * @param message
-	 * @return
-	 */
-	public abstract Message getChatMessage(String message);
-	
-	/**
-	 * Gets the introduction message that the client sends to the server on connect
-	 * 
-	 * @param playerName the name of the player
-	 * @return the message, or null if there is no message
-	 */
-	public abstract Message getIntroductionMessage(String playerName);
 
 	/**
 	 * Registers a Protocol for a particular id value

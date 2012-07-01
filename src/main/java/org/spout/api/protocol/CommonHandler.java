@@ -26,8 +26,9 @@
  */
 package org.spout.api.protocol;
 
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
+
+import org.spout.api.Server;
 
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelHandlerContext;
@@ -35,8 +36,6 @@ import org.jboss.netty.channel.ChannelStateEvent;
 import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
-import org.spout.api.Engine;
-import org.spout.api.Server;
 
 /**
  * A {@link SimpleChannelUpstreamHandler} which processes incoming network
@@ -48,100 +47,71 @@ public class CommonHandler extends SimpleChannelUpstreamHandler {
 	/**
 	 * The server.
 	 */
-	private final Engine engine;
+	private final Server server;
 
 	/**
 	 * The associated session
 	 */
-	private AtomicReference<Session> session = new AtomicReference<Session>(null);
-	
-	/**
-	 * Indicates if it is an upstream channel pipeline
-	 */
-	private final boolean upstream;
+	private volatile Session session = null;
 
 	/**
 	 * Creates a new network event handler.
 	 *
 	 * @param server The server.
 	 */
-	public CommonHandler(Engine engine, boolean upstream) {
-		this.engine = engine;
-		this.upstream = upstream;
+	public CommonHandler(Server server) {
+		this.server = server;
 	}
 
 	@Override
 	public void channelConnected(ChannelHandlerContext ctx, ChannelStateEvent e) {
-		if (!upstream) {
-			try {
-				Channel c = e.getChannel();
-				engine.getChannelGroup().add(c);
+		Channel c = e.getChannel();
+		server.getChannelGroup().add(c);
 
-				Server server = (Server) engine;
-				Session session = server.newSession(c);
-				server.getSessionRegistry().add(session);
-				setSession(session);
+		Session session = server.newSession(c);
+		server.getSessionRegistry().add(session);
+		ctx.setAttachment(session);
+		this.session = session;
 
-				engine.getLogger().info("Downstream channel connected: " + c + ".");
-			} catch (Exception ex) {
-				ex.printStackTrace();
-				throw new RuntimeException("Exception thrown when connecting", ex);
-			}
-		} else {
-			Channel c= e.getChannel();
-			engine.getLogger().info("Upstream channel connected: " + c + ".");
-		}
+		server.getLogger().info("Channel connected: " + c + ".");
 	}
 
 	@Override
 	public void channelDisconnected(ChannelHandlerContext ctx, ChannelStateEvent e) {
-		try {
-			Channel c = e.getChannel();
-			engine.getChannelGroup().remove(c);
+		Channel c = e.getChannel();
+		server.getChannelGroup().remove(c);
 
-			Session session = this.session.get();
-			if (session.isPrimary(c)) {
-				engine.getSessionRegistry().remove(session);
-				session.dispose();
-			}
-			engine.getLogger().info("Channel disconnected: " + c + ".");
-		} catch (Exception ex) {
-			ex.printStackTrace();
-			throw new RuntimeException("Exception thrown when disconnecting", ex);
-		}
+		Session session = (Session) ctx.getAttachment();
+		server.getSessionRegistry().remove(session);
+		session.dispose();
+
+		server.getLogger().info("Channel disconnected: " + c + ".");
 	}
 
 	@Override
 	public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) {
-		Session session = this.session.get();
-		session.messageReceived(upstream, (Message) e.getMessage());
+		Session session = (Session) ctx.getAttachment();
+		session.messageReceived((Message) e.getMessage());
 	}
 
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) {
 		Channel c = e.getChannel();
 		if (c.isOpen()) {
-			engine.getChannelGroup().remove(c);
+			server.getChannelGroup().remove(c);
 
-			Session session = this.session.get();
+			Session session = (Session) ctx.getAttachment();
 			if (session != null) {
-				engine.getSessionRegistry().remove(session);
+				server.getSessionRegistry().remove(session);
 				session.dispose();
 			}
 
-			engine.getLogger().log(Level.WARNING, "Exception caught, closing channel: " + c + "...", e.getCause());
+			server.getLogger().log(Level.WARNING, "Exception caught, closing channel: " + c + "...", e.getCause());
 			c.close();
-		}
-	}
-	
-	public void setSession(Session session) {
-		if (!this.session.compareAndSet(null, session)) {
-			throw new IllegalStateException("Session may not be set more than once");
 		}
 	}
 
 	public void setProtocol(Protocol protocol) {
-		Session session = this.session.get();
 		if (session != null) {
 			session.setProtocol(protocol);
 		} else {

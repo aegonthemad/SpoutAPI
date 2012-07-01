@@ -42,19 +42,15 @@ import org.spout.api.protocol.replayable.ReplayableError;
  */
 public class CommonDecoder extends PreprocessReplayingDecoder {
 	private volatile CodecLookupService codecLookup = null;
-	private final int previousMask = 0x1F;
-	private int[] previousOpcodes = new int[previousMask + 1];
-	private int opcodeCounter = 0;
+	private int previousOpcode = -1;
 	private volatile BootstrapProtocol bootstrapProtocol;
 	private final CommonHandler handler;
 	private final CommonEncoder encoder;
-	private final boolean upstream;
 
-	public CommonDecoder(CommonHandler handler, CommonEncoder encoder, boolean upstream) {
+	public CommonDecoder(CommonHandler handler, CommonEncoder encoder) {
 		super(512);
 		this.encoder = encoder;
 		this.handler = handler;
-		this.upstream = upstream;
 	}
 
 	@Override
@@ -83,14 +79,7 @@ public class CommonDecoder extends PreprocessReplayingDecoder {
 				}
 			}
 			if (codec == null) {
-				StringBuilder sb = new StringBuilder();
-				for (int i = 0; i < previousMask; i++) {
-					if (i > 0) {
-						sb.append(", ");
-					}
-					sb.append(Integer.toHexString(previousOpcodes[(opcodeCounter + i) & previousMask]));
-				}
-				throw new IOException("Unknown operation code: " + opcode + " (previous opcodes: " + sb.toString() + ").");
+				throw new IOException("Unknown operation code: " + opcode + " (previous opcode: " + previousOpcode + ").");
 			}
 		}
 
@@ -100,9 +89,9 @@ public class CommonDecoder extends PreprocessReplayingDecoder {
 			buf.readByte();
 		}
 
-		previousOpcodes[(opcodeCounter++) & previousMask] = opcode;
+		previousOpcode = opcode;
 
-		Message message = codec.decode(upstream, buf);
+		Message message = codec.decode(buf);
 
 		if (bootstrapProtocol != null) {
 			String id = bootstrapProtocol.detectProtocolDefinition(message);
@@ -116,12 +105,8 @@ public class CommonDecoder extends PreprocessReplayingDecoder {
 				}
 			}
 		}
+
 		return message;
-	}
-	
-	public void setSession(Session session) {
-		handler.setSession(session);
-		setProtocol(session.getProtocol());
 	}
 	
 	private void setProtocol(Protocol protocol) {
