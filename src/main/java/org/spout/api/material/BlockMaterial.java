@@ -43,6 +43,9 @@ import org.spout.api.material.range.EffectRange;
 import org.spout.api.math.MathHelper;
 import org.spout.api.util.flag.ByteFlagContainer;
 
+/**
+ * Defines the specific characteristics of a Block
+ */
 public class BlockMaterial extends Material implements Placeable {
 
 	public static final BlockMaterial AIR = new BasicAir();
@@ -72,7 +75,7 @@ public class BlockMaterial extends Material implements Placeable {
 	}
 
 	/**
-	 * Gets the block at the given id, or null if none found
+	 * Gets the block with the given id, or null if none found
 	 * 
 	 * @param id to get
 	 * @return block, or null if none found
@@ -153,7 +156,7 @@ public class BlockMaterial extends Material implements Placeable {
 		if (this.controller == null) {
 			throw new IllegalStateException("Can not obtain the block controller because no controller type is set for this material.");
 		}
-		BlockController controller = block.getController();
+		BlockController controller = block.getRegion().getBlockController(block.getX(), block.getY(), block.getZ());
 		if (controller != null) {
 			Class<?> clazz = this.controller.getControllerClass();
 			if (clazz.isAssignableFrom(controller.getClass())) {
@@ -166,7 +169,7 @@ public class BlockMaterial extends Material implements Placeable {
 		}
 
 		controller = (BlockController) this.controller.createController();
-		block.setController(controller);
+		block.getRegion().setBlockController(block.getX(), block.getY(), block.getZ(), controller);
 		return controller;
 	}
 
@@ -301,10 +304,11 @@ public class BlockMaterial extends Material implements Placeable {
 	/**
 	 * Called when a block near to this material is changed.<br>
 	 * 
+	 * @param oldMaterial the previous material, or null if the update was not due to a material change
 	 * @param block that got updated
 	 * @return true if the block was updated
 	 */
-	public void onUpdate(Block block) {
+	public void onUpdate(BlockMaterial oldMaterial, Block block) {
 	}
 	
 	/**
@@ -353,7 +357,7 @@ public class BlockMaterial extends Material implements Placeable {
 	public void onDestroy(Block block) {
 		block.setMaterial(AIR);
 		if (this.hasController()) {
-			block.setController(null);
+			block.getRegion().setBlockController(block.getX(), block.getY(), block.getZ(), null);
 		}
 	}
 

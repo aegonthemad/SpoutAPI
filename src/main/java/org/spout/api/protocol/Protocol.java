@@ -28,14 +28,15 @@ package org.spout.api.protocol;
 
 import java.util.concurrent.ConcurrentHashMap;
 
-public class Protocol {
+public abstract class Protocol {
 	private static final ConcurrentHashMap<String, Protocol> map = new ConcurrentHashMap<String, Protocol>();
 
 	private final CodecLookupService codecLookup;
 	private final HandlerLookupService handlerLookup;
 	private final String name;
 
-	public Protocol(String name, CodecLookupService codecLookup, HandlerLookupService handlerLookup) {
+	public Protocol(String name, CodecLookupService codecLookup,
+			HandlerLookupService handlerLookup) {
 		this.codecLookup = codecLookup;
 		this.handlerLookup = handlerLookup;
 		this.name = name;
@@ -43,7 +44,7 @@ public class Protocol {
 
 	/**
 	 * Gets the handler lookup service associated with this Protocol
-	 *
+	 * 
 	 * @return the handler lookup service
 	 */
 	public HandlerLookupService getHandlerLookupService() {
@@ -52,7 +53,7 @@ public class Protocol {
 
 	/**
 	 * Gets the codec lookup service associated with this Protocol
-	 *
+	 * 
 	 * @return the codec lookup service
 	 */
 	public CodecLookupService getCodecLookupService() {
@@ -61,7 +62,7 @@ public class Protocol {
 
 	/**
 	 * Gets the name of the Protocol
-	 *
+	 * 
 	 * @return the name
 	 */
 	public String getName() {
@@ -69,10 +70,38 @@ public class Protocol {
 	}
 
 	/**
+	 * Gets a message for kicking a player
+	 * 
+	 * @param message
+	 * @return
+	 */
+	public abstract Message getKickMessage(Object... message);
+
+	/**
+	 * Gets a chat message for a given string
+	 * 
+	 * @param message
+	 * @return
+	 */
+	public abstract Message getChatMessage(Object... message);
+
+	/**
+	 * Gets the introduction message that the client sends to the server on
+	 * connect
+	 * 
+	 * @param playerName
+	 *            the name of the player
+	 * @return the message, or null if there is no message
+	 */
+	public abstract Message getIntroductionMessage(String playerName);
+
+	/**
 	 * Registers a Protocol for a particular id value
-	 *
-	 * @param id the id of the protocol
-	 * @param protocol the Protocol
+	 * 
+	 * @param id
+	 *            the id of the protocol
+	 * @param protocol
+	 *            the Protocol
 	 */
 	public static void registerProtocol(String id, Protocol protocol) {
 		map.put(id, protocol);
@@ -80,8 +109,9 @@ public class Protocol {
 
 	/**
 	 * Gets the Protocol associated with a particular id
-	 *
-	 * @param id the id
+	 * 
+	 * @param id
+	 *            the id
 	 * @return the Protocol
 	 */
 	public static Protocol getProtocol(String id) {

@@ -72,7 +72,6 @@ public interface Engine extends Named {
 	 *
 	 * @return name of the implementation
 	 */
-
 	public String getName();
 
 	/**
@@ -139,10 +138,23 @@ public interface Engine extends Named {
 	 * Broadcasts the given message to all players
 	 *
 	 * The implementation of broadcast is identical to iterating over
-	 * {@link #getOnlinePlayers()} and invoking {@link Player#sendMessage(String)} for
+	 * {@link #getOnlinePlayers()} and invoking {@link Player#sendMessage(Object...)} for
 	 * each player.
 	 *
 	 * @param message to send
+	 */
+	public void broadcastMessage(Object... message);
+
+	/**
+	 * Broadcasts the given single-string message to all players.
+	 * Should be implemented as <code>broadcastMessage(new Object[] {message})</code>
+	 * This method is purely a workaround for the way Java chooses which method to call
+	 * in ambiguous situations, which would result in calls with a single string intended for
+	 * {@link #broadcastMessage(Object...)} having their string argument passed to
+	 * {@link #broadcastMessage(String, Object...)} as the permission
+	 *
+ 	 * @see #broadcastMessage(Object...)
+	 * @param message The single-string message
 	 */
 	public void broadcastMessage(String message);
 
@@ -159,12 +171,12 @@ public interface Engine extends Named {
 	 * Broadcasts the given message to all players
 	 *
 	 * The implementation of broadcast is identical to calling a {@link org.spout.api.event.server.permissions.PermissionGetAllWithNodeEvent}
-	 * event, iterating over each element in getReceivers, invoking {@link CommandSource#sendMessage(String)} for
+	 * event, iterating over each element in getReceivers, invoking {@link CommandSource#sendMessage(Object...)} for
 	 * each CommandSource.
 	 *
 	 * @param message to send
 	 */
-	public void broadcastMessage(String message, String permission);
+	public void broadcastMessage(String permission, Object... message);
 
 	/**
 	 * Gets singleton instance of the plugin manager, used to interact with
@@ -175,9 +187,7 @@ public interface Engine extends Named {
 	public PluginManager getPluginManager();
 
 	/**
-	 * Gets the logger instance that is used to write to the console.
-	 *
-	 * It should be identical to Logger.getLogger("minecraft");
+	 * Gets the {@link Logger} instance that is used to write to the console.
 	 *
 	 * @return logger
 	 */
@@ -199,39 +209,39 @@ public interface Engine extends Named {
 	 *
 	 * The update folder name is relative to the plugins folder.
 	 *
-	 * @return The name of the update folder
+	 * @return {@link File} of the update folder
 	 */
 	public File getUpdateFolder();
 
 	/**
-	 * Gets the config folder for the game
+	 * Gets the configuration folder for the game
 	 *
-	 * @return config folder
+	 * @return {@link File} of the configuration folder
 	 */
 	public File getConfigFolder();
 
 	/**
-	 * Gets the folder that contains world, entity and player data.
+	 * Gets the folder which contains world, entity and player data.
 	 *
-	 * @return data
+	 * @return {@link File} of the data folder.
 	 */
 	public File getDataFolder();
-	
+
 	/**
-	 * Gets the entity with the matching unique id
+	 * Gets the {@link Entity} with the matching unique id
 	 * <br/> <br/>
 	 * Performs a search on each world and then searches each world respectively
 	 * for the entity, stopping when it is found, or after all the worlds have
 	 * been searched upon failure.
-	 * 
+	 *
 	 * @param uid to search and match
-	 * @return entity that matched the uid, or null if none was found
+	 * @return {@link entity} that matched the uid, or null if none was found
 	 */
 	@SnapshotRead
 	public Entity getEntity(UUID uid);
 
 	/**
-	 * Gets the player by the given username. <br/>
+	 * Gets the {@link Player} by the given username. <br/>
 	 * <br/>
 	 * If searching for the exact name, this method will iterate and check for
 	 * exact matches. <br/>
@@ -263,6 +273,28 @@ public interface Engine extends Named {
 	 * Searches for an actively loaded world that exactly matches the given
 	 * name. <br/>
 	 * <br/>
+	 * If searching for the exact name, this method will iterate and check for
+	 * exact matches. <br/>
+	 * <br/>
+	 * Otherwise, this method will iterate over over all worlds and find the closest match
+	 * to the given name, by comparing the length of other player names that
+	 * start with the given parameter. <br/>
+	 * <br/>
+	 *
+	 * Worlds are added to the list immediately, but removed at the end of a tick.
+	 *
+	 * @param name of the world to search for
+	 * @param exact Whether to use exact lookup
+	 * @return world if found, else null
+	 */
+	@LiveRead
+	@SnapshotRead
+	public World getWorld(String name, boolean exact);
+
+	/**
+	 * Searches for an actively loaded world that exactly matches the given
+	 * name. <br/>
+	 * <br/>
 	 * The implementation is identical to iterating over {@link #getWorlds()}
 	 * and checking for a world that matches {@link World#getName()}. <br/>
 	 * <br/>
@@ -270,11 +302,28 @@ public interface Engine extends Named {
 	 * Worlds are added to the list immediately, but removed at the end of a tick.
 	 *
 	 * @param name of the world to search for
-	 * @return world if found, else null
+	 * @return {@link World} if found, else null
 	 */
 	@LiveRead
 	@SnapshotRead
 	public World getWorld(String name);
+
+	/**
+	 * Searches for actively loaded worlds that matches the given
+	 * name. <br/>
+	 * <br/>
+	 * The implementation is identical to iterating over {@link #getWorlds()}
+	 * and checking for a world that matches {@link World#getName()} <br/>
+	 * <br/>
+	 *
+	 * Worlds are added to the list immediately, but removed at the end of a tick.
+	 *
+	 * @param name of the world to search for, or part of it
+	 * @return a collection of worlds that matched the name
+	 */
+	@LiveRead
+	@SnapshotRead
+	public Collection<World> matchWorld(String name);
 
 	/**
 	 * Searches for an actively loaded world has the given {@link UUID}. <br/>
@@ -286,32 +335,32 @@ public interface Engine extends Named {
 	 * Worlds are added to the list immediately, but removed at the end of a tick.
 	 *
 	 * @param uid of the world to search for
-	 * @return world if found, else null
+	 * @return {@link World} if found, else null
 	 */
 	@LiveRead
 	@SnapshotRead
 	public World getWorld(UUID uid);
 
 	/**
-	 * Gets a List of actively loaded worlds
+	 * Gets a List of all currently loaded worlds
 	 *
 	 * Worlds are added to the list immediately, but removed at the end of a tick.
 	 *
-	 * @return a {@link List} of actively loaded worlds
+	 * @return {@link Collection} of actively loaded worlds
 	 */
 	@LiveRead
 	@SnapshotRead
 	public Collection<World> getWorlds();
 
 	/**
-	 * Loads a world with the given name and generator<br/>
+	 * Loads a {@link World} with the given name and {@link WorldGenerator}<br/>
 	 * If the world doesn't exist on disk, it creates it.<br/>
 	 * <br/>
 	 * if the world is already loaded, this functions the same as {@link #getWorld(String)}
 	 *
 	 * @param name Name of the world
 	 * @param generator World Generator
-	 * @return
+	 * @return {@link World} loaded or created.
 	 */
 	@LiveRead
 	public World loadWorld(String name, WorldGenerator generator);
@@ -360,15 +409,38 @@ public interface Engine extends Named {
 
 	/**
 	 * Ends this game instance safely. All worlds, players, and configuration
-	 * data is saved, and all threads are ended cleanly.
+	 * data is saved, and all threads are ended cleanly.<br/>
+	 * <br/>
+	 * Players will be sent a default disconnect message.
 	 */
 	public void stop();
 
 	/**
 	 * Ends this game instance safely. All worlds, players, and configuration
 	 * data is saved, and all threads are ended cleanly.
+	 * <br/>
+	 * If any players are connected, will kick them with the given reason.
+	 *
+	 * @param reason for stopping the game instance
 	 */
 	public void stop(String reason);
+
+	/**
+	 * Gets the world folders which match the world name.
+	 *
+	 * @param name to match the world folders with
+	 * @return the world folders that match the world name
+	 */
+	public Collection<File> matchWorldFolder(String worldName);
+
+	/**
+	 * Gets all the individual world folders where world data is stored. <br/>
+	 * <br/>
+	 * This includes offline worlds.
+	 *
+	 * @return a list of available world folders
+	 */
+	public List<File> getWorldFolders();
 
 	/**
 	 * Gets the folder that contains the world save data. <br/>
@@ -390,7 +462,7 @@ public interface Engine extends Named {
 
 	/**
 	 * Returns the game's {@link EventManager} Event listener registration and
-	 * calling is handled through this. ß
+	 * calling is handled through this.
 	 *
 	 * @return Our EventManager instance
 	 */
@@ -402,7 +474,6 @@ public interface Engine extends Named {
 	 * @return current platform type
 	 */
 	public Platform getPlatform();
-
 
 	/**
 	 * Gets the network channel group.
@@ -433,23 +504,25 @@ public interface Engine extends Named {
 	public Scheduler getScheduler();
 
 	/**
-	 * Gets the task manager responsible for parallel region tasks.<br>
-	 * <br>
-	 * All tasks are submitted to all loaded regions at the start of the next tick.<br>
-	 * <br>
-	 * Repeating tasks are also submitted to all new regions when they are created.<br>
+	 * Gets the task manager responsible for parallel region tasks.
+	 * <br/>
+	 * All tasks are submitted to all loaded regions at the start of the next tick.<br/>
+	 * <br/>
+	 * Repeating tasks are also submitted to all new regions when they are created.<br/>
 	 * Repeated tasks are NOT guaranteed to happen in the same tick for all regions,
-	 * as each task is submitted individually to each Region.<br>
-	 * <br>
+	 * as each task is submitted individually to each Region.<br/>
+	 * <br/>
 	 * This task manager does not support async tasks.
-	 * <br>
+	 * <br/>
 	 * If the Runnable for the task is a ParallelRunnable, then a new instance of the Runnable will be created for each region.
-	 * @return the parallel task manager for the engine
+	 *
+	 * @return the parallel {@link TaskManager} for the engine
 	 */
 	public TaskManager getParallelTaskManager();
 
 	/**
 	 * Returns the bootstrap protocol for {@code address}
+	 *
 	 * @param address The address
 	 * @return The protocol
 	 */
@@ -469,15 +542,14 @@ public interface Engine extends Named {
 	 */
 	public RecipeManager getRecipeManager();
 
-
 	/**
 	 * Returns true if the game is running in debug mode <br/>
 	 * <br/>
 	 * To start debug mode, start Spout with -debug
+	 *
 	 * @return true if server is started with the -debug flag, false if not
 	 */
 	public boolean debugMode();
-
 
 	/**
 	 * Gets the main thread that is used to manage all execution on the server. <br/>
@@ -501,7 +573,7 @@ public interface Engine extends Named {
 	public boolean setDefaultWorld(World world);
 
 	/**
-	 * Gets the default world.
+	 * Gets the default {@link World}.
 	 *
 	 * @return the default world
 	 */
@@ -509,36 +581,32 @@ public interface Engine extends Named {
 	public World getDefaultWorld();
 
 	/**
-	 * Gets the server's configuration directory
-	 *
-	 * @return the config directory
-	 */
-	public File getConfigDirectory();
-
-	/**
-	 * Gets the server's log file
+	 * Gets the name of the server's log file
 	 *
 	 * @return the log filename
 	 */
 	public String getLogFile();
 
 	/**
-	 * Gets a list of available commands from the command map.
+	 * Gets an array of available commands from the command map.
 	 *
-	 * @return A list of all commands at the time.
+	 * @return An array of all command names currently registered on the server.
 	 */
 	public String[] getAllCommands();
-	
-	
+
 	/**
 	 * Gets an abstract representation of the engine Filesystem.
-	 * 
-	 * The Filesystem handles the loading of all resources. 
-	 * 
-	 * On the client, loading a resource will load the resource from the harddrive.  
+	 *
+	 * The Filesystem handles the loading of all resources.
+	 *
+	 * On the client, loading a resource will load the resource from the harddrive.
 	 * On the server, it will notify all clients to load the resource, as well as provide a representation of that resource.
-	 * 
+	 *
 	 */
 	public FileSystem getFilesystem();
-	
+
+	public void setVariable(String key, String value);
+
+	public String getVariable(String key);
+
 }

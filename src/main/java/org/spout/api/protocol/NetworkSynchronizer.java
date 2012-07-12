@@ -244,9 +244,9 @@ public abstract class NetworkSynchronizer implements InventoryViewer {
 			}
 
 			chunkFreeQueue.clear();
-			
+
 			int chunksSent = 0;
-			
+
 			for (Point p : chunkInitQueue) {
 				if (initializedChunks.add(p)) {
 					initChunk(p);
@@ -254,7 +254,7 @@ public abstract class NetworkSynchronizer implements InventoryViewer {
 			}
 
 			chunkInitQueue.clear();
-			
+
 			Iterator<Point> i;
 
 			i = priorityChunkSendQueue.iterator();
@@ -268,7 +268,7 @@ public abstract class NetworkSynchronizer implements InventoryViewer {
 					chunksSent++;
 				}
 			}
-			
+
 			if (priorityChunkSendQueue.isEmpty() && teleported && entity != null) {
 				Point ep = entity.getPosition();
 				if (worldChanged) {
@@ -421,8 +421,8 @@ public abstract class NetworkSynchronizer implements InventoryViewer {
 	 *
 	 * This is a MONITOR method, for sending network updates, no changes should
 	 * be made to the chunk
-	 * 
-	 * While always called during the startSnapshot part of the tick, it may be called from 
+	 *
+	 * While always called during the startSnapshot part of the tick, it may be called from
 	 * multiple threads
 	 *
 	 * @param c the chunk
@@ -438,7 +438,7 @@ public abstract class NetworkSynchronizer implements InventoryViewer {
 	 *
 	 * This is a MONITOR method, for sending network updates, no changes should
 	 * be made to the chunk.
-	 * 
+	 *
 	 * All calls to this method are made from the thread managing the player
 	 *
 	 * @param p the base Point for the chunk
@@ -454,7 +454,7 @@ public abstract class NetworkSynchronizer implements InventoryViewer {
 	 *
 	 * This is a MONITOR method, for sending network updates, no changes should
 	 * be made to the chunk
-	 * 
+	 *
 	 * All calls to this method are made from the thread managing the player
 	 *
 	 * @param p the base Point for the chunk
@@ -547,11 +547,4 @@ public abstract class NetworkSynchronizer implements InventoryViewer {
 	public void syncEntity(Entity e) {
 	}
 
-	public Message getChatMessage(String message) {
-		return null;
-	}
-
-	public Message getKickMessage(String message) {
-		return null;
-	}
 }

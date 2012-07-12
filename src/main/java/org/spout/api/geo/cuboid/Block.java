@@ -38,6 +38,7 @@ import org.spout.api.material.range.EffectRange;
 import org.spout.api.material.source.DataSource;
 import org.spout.api.material.source.MaterialSource;
 import org.spout.api.material.source.MaterialState;
+import org.spout.api.math.IntVector3;
 import org.spout.api.math.Vector3;
 import org.spout.api.util.thread.LiveWrite;
 import org.spout.api.util.thread.Threadsafe;
@@ -143,6 +144,14 @@ public interface Block extends MaterialState {
 	public Block translate(Vector3 offset);
 
 	/**
+	 * Translates this block using the offset given
+	 * 
+	 * @param offset Vector to translate
+	 * @return a new Block instance
+	 */
+	public Block translate(IntVector3 offset);
+
+	/**
 	 * Translates this block using the offsets given
 	 * 
 	 * @param dx offset to translate
@@ -151,6 +160,14 @@ public interface Block extends MaterialState {
 	 * @return a new Block instance
 	 */
 	public Block translate(int dx, int dy, int dz);
+
+	/**
+	 * Translates this block above or below to the surface<br>
+	 * The returned Block is the surface, <b>not</b> the first air block above.
+	 * 
+	 * @return a new Block instance
+	 */
+	public Block getSurface();
 
 	/**
 	 * Gets the source this block represents
@@ -300,27 +317,55 @@ public interface Block extends MaterialState {
 	public int setDataField(int bits, int value);
 
 	/**
-	 * Gets the block light level
-	 *
-	 * @return the block light level
-	 * @throws NullPointerException
+	 * Gets the current light level of the block<br>
+	 * This is both sky and block light<br>
+	 * Sky light is affected by the sky light level emitted by the world
+	 * 
+	 * @return the light level
 	 */
 	public byte getLight();
 
 	/**
-	 * Sets the block light level to the given light level
+	 * Sets the sky light level to the given light level<br><br>
+	 * <b>Note: For persistence, alter block material light levels instead</b>
+	 * 
+	 * @param light level to set to
+	 * @return this Block
+	 * @throws NullPointerException
+	 */
+	public Block setSkyLight(byte level);
+
+	/**
+	 * Sets the block light level to the given light level<br><br>
+	 * <b>Note: For persistence, alter block material light levels instead</b>
 	 *
 	 * @param light level to set to
 	 * @return this Block
 	 * @throws NullPointerException
 	 */
-	public Block setLight(byte level);
+	public Block setBlockLight(byte level);
 
 	/**
-	 * Gets the sky light level
+	 * Gets the block light level
+	 *
+	 * @return the block light level
+	 */
+	public byte getBlockLight();
+
+	/**
+	 * Gets the sky light level<br>
+	 * The returned value is <b>not</b> affected by the world sky light that is emitted<br>
+	 * It is the light level that is actually stored
 	 *
 	 * @return the sky light level
-	 * @throws NullPointerException
+	 */
+	public byte getSkyLightRaw();
+
+	/**
+	 * Gets the sky light level<br>
+	 * The returned value is affected by the world sky light that is emitted
+	 *
+	 * @return the sky light level
 	 */
 	public byte getSkyLight();
 
@@ -333,28 +378,11 @@ public interface Block extends MaterialState {
 	public Biome getBiomeType();
 
 	/**
-	 * Sets the sky light level to the given light level
-	 *
-	 * @param light level to set to
-	 * @return this Block
-	 * @throws NullPointerException
-	 */
-	public Block setSkyLight(byte level);
-
-	/**
 	 * Gets a controller associated with the block, or null if it has none.
 	 *
 	 * @return block controller
 	 */
-	public BlockController getController();
-
-	/**
-	 * Sets the entity associated with the block.
-	 *
-	 * @param controller to set to, or null to clear it
-	 * @return this Block
-	 */
-	public Block setController(BlockController controller);
+	public <T extends BlockController> T getController();
 
 	/**
 	 * Whether or not the block is associated with a block controller
@@ -362,6 +390,14 @@ public interface Block extends MaterialState {
 	 * @return true if has a controller
 	 */
 	public boolean hasController();
+
+	/**
+	 * Gets if this block is above or at the surface<br>
+	 * This is the case if the block comes into contact with the sky
+	 * 
+	 * @return True if above or at the surface, False if not
+	 */
+	public boolean isAtSurface();
 
 	/**
 	 * Queues a physics update on this block and all blocks within the given range, this method can be called from any thread

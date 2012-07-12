@@ -26,6 +26,7 @@
  */
 package org.spout.api.plugin.services;
 
+import org.spout.api.Spout;
 import org.spout.api.player.Player;
 
 /**
@@ -36,12 +37,36 @@ import org.spout.api.player.Player;
  * <code>getServiceManager().register(EconomyService.class, myEconomyInstance, myPlugin, ServicePriority)</code>
  * 
  * For plugins that wish to get the current economy provider, they will need to:
- * <code>getServiceManager().getRegistration(EconomyService.class).getProvider();</code>
- * <code>getRegistration(EconomyService.class)</code> CAN return null, if there is no current registration.
+ * {@link EconomyService#getEconomy()}</code> this method can possibly return null, if an economy service
+ * has not been registered yet with the ServiceManager.  
+ * 
+ * Another option is to hook the {@link ServiceRegisterEvent}
  *
  */
 public abstract class EconomyService {
 
+	/**
+	 * Checks if an EconomyService has been registered in the ServiceManager.
+	 * 
+	 * @return true if an EconomyService has been registered
+	 */
+	public static boolean isEconomyEnabled() {
+		return Spout.getEngine().getServiceManager().getRegistration(EconomyService.class) != null;
+	}
+	
+	/**
+	 * Gets the highest priority EconomyService registered in the Spout Services API.
+	 * If there is currently no EconomyService registered null will be returned instead.
+	 * 
+	 * @return EconomyService 
+	 */
+	public static EconomyService getEconomy() {
+		if (!isEconomyEnabled()) {
+			return null;
+		}
+		return Spout.getEngine().getServiceManager().getRegistration(EconomyService.class).getProvider();
+	}
+	
 	/**
 	 * Checks if the given account has at least as much as the amount specified.
 	 * 
@@ -78,6 +103,15 @@ public abstract class EconomyService {
 	 * @return true if the deposit was successful
 	 */
 	public abstract boolean deposit(String name, double amount);
+
+
+	/**
+	 * Checks if the account exists in the economy service.
+	 * 
+	 * @param name of the account
+	 * @return if the account exists
+	 */
+	public abstract boolean exists(String name);
 
 	/**
 	 * This is a copied-method that assumes the player's name is their account name and
@@ -127,4 +161,41 @@ public abstract class EconomyService {
 	public boolean deposit(Player player, double amount) {
 		return deposit(player.getName(), amount);
 	}
+
+	/**
+	 * This is a copied-method that assumes the player's name is their account name and
+	 * Checks if the account exists in the economy service.
+	 * 
+	 * @param player of the account to check existence of.
+	 * @return true if the account exists, otherwise false
+	 */
+	public boolean exists(Player player) {
+		return exists(player.getName());
+	}
+
+	/**
+	 * Returns the name of the currency in singular form.
+	 * 
+	 * @return name of the currency (singular)
+	 */
+	public abstract String getCurrencyNameSingular();
+
+
+	/**
+	 * Returns the name of the currency in plural form.
+	 * 
+	 * @return name of the currency (plural)
+	 */
+	public abstract String getCurrencyNamePlural();
+
+
+	/**
+	 * Some economy services round off after a specific number of digits.
+	 * This function returns the number of digits the service keeps
+	 * or -1 if no rounding occurs.
+	 * An economy may return 0 if it is using integers for storing data.
+	 * 
+	 * @return number of digits after the decimal point kept
+	 */
+	public abstract int numSignificantDigits();
 }

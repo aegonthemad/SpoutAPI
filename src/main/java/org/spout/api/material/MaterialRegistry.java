@@ -37,6 +37,10 @@ import org.spout.api.material.block.BlockFullState;
 import org.spout.api.math.MathHelper;
 import org.spout.api.util.StringMap;
 
+/**
+ * Handles all registered materials on the server statically.
+ *
+ */
 public abstract class MaterialRegistry {
 	private final static ConcurrentHashMap<String, Material> nameLookup = new ConcurrentHashMap<String, Material>(1000);
 	private final static int MAX_SIZE = 1 << 16;
@@ -44,16 +48,21 @@ public abstract class MaterialRegistry {
 	private final static AtomicReference<Material>[] materialLookup = new AtomicReference[MAX_SIZE];
 	private static boolean setup = false;
 	private final static BinaryFileStore store = new BinaryFileStore();
-	private final static StringMap materialRegistry = new StringMap(null, store, 1, Short.MAX_VALUE);;
+	private final static StringMap materialRegistry = new StringMap(null, store, 1, Short.MAX_VALUE, Material.class.getName());
 
 	static {
 		for (int i = 0; i < materialLookup.length; i++) {
 			materialLookup[i] = new AtomicReference<Material>();
 		}
 	}
-	
+
 	/**
-	 * Sets up the material registry for it's first use. May not be called more than once.
+	 * Sets up the material registry for it's first use. May not be called more than once.<br/>
+	 * This attempts to load the materials.dat file from the 'worlds' directory into memory.<br/>
+	 * 
+	 * Can throw an {@link IllegalStateException} if the material registry has already been setup.
+	 * 
+	 * @return StringMap of registered materials
 	 */
 	public static StringMap setupRegistry() {
 		if (setup) {
@@ -71,13 +80,14 @@ public abstract class MaterialRegistry {
 
 	/**
 	 * Registers the material in the material lookup service
-	 * 
+	 *
 	 * @param material to register
+	 * @return id of the material registered
 	 */
 	protected static int register(Material material) {
 		if (material.isSubMaterial()) {
 			material.getParentMaterial().registerSubMaterial(material);
-			nameLookup.put(material.getName().toLowerCase(), material);
+			nameLookup.put(formatName(material.getDisplayName()), material);
 			return material.getParentMaterial().getId();
 		} else {
 			int id = materialRegistry.register(material.getName());
@@ -85,15 +95,16 @@ public abstract class MaterialRegistry {
 				throw new IllegalArgumentException(materialLookup[id].get() + " is already mapped to id: " + material.getId() + "!");
 			}
 
-			nameLookup.put(material.getName().toLowerCase(), material);
+			nameLookup.put(formatName(material.getDisplayName()), material);
 			return id;
 		}
 	}
 
 	/**
 	 * Registers the material in the material lookup service
-	 * 
+	 *
 	 * @param material to register
+	 * @return id of the material registered.
 	 */
 	protected static int register(Material material, int id) {
 		materialRegistry.register(material.getName(), id);
@@ -101,7 +112,7 @@ public abstract class MaterialRegistry {
 			throw new IllegalArgumentException(materialLookup[id].get() + " is already mapped to id: " + material.getId() + "!");
 		}
 
-		nameLookup.put(material.getName().toLowerCase(), material);
+		nameLookup.put(formatName(material.getName()), material);
 		return id;
 	}
 
@@ -117,20 +128,22 @@ public abstract class MaterialRegistry {
 		}
 		return materialLookup[id].get();
 	}
-	
+
 	/**
 	 * Gets the material for the given BlockFullState
-	 * 
+	 *
 	 * @param state the full state of the block
+	 * @return Material of the BlockFullState
 	 */
 	public static Material get(BlockFullState state) {
 		return get(state.getPacked());
 	}
-		
+
 	/**
 	 * Gets the material for the given packed full state
-	 * 
+	 *
 	 * @param state the full state of the block
+	 * @return Material of the id
 	 */
 	public static Material get(int packedState) {
 		short id = BlockFullState.getId(packedState);
@@ -169,12 +182,24 @@ public abstract class MaterialRegistry {
 	 * @return material, or null if none found
 	 */
 	public static Material get(String name) {
-		return nameLookup.get(name.toLowerCase());
+		return nameLookup.get(formatName(name));
+	}
+
+	/**
+	 * Returns a human legible material name from the full material.
+	 * 
+	 * This will strip any '_' and replace with spaces, strip out extra whitespace, and lowercase the material name.
+	 *
+	 * @param matName
+	 * @return human legible name of the material.
+	 */
+	private static String formatName(String matName) {
+		return matName.trim().replaceAll(" ", "_").toLowerCase();
 	}
 
 	/**
 	 * Gets the minimum data mask required to account for all sub-materials of the material
-	 * 
+	 *
 	 * @param m the material
 	 * @return the minimum data mask
 	 */

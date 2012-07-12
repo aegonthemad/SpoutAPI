@@ -24,39 +24,11 @@
  * License and see <http://www.spout.org/SpoutDevLicenseV1.txt> for the full license,
  * including the MIT license.
  */
-package org.spout.api.generator;
-
-import org.spout.api.geo.World;
-import org.spout.api.geo.cuboid.Chunk;
-
-import java.util.Random;
+package org.spout.api.chat.style;
 
 /**
- * @author zml2008
+ * Represents a formatter that will automatically insert {@link ChatStyle}'s into a String.
  */
-public class WorldGeneratorObjectPopulator implements Populator {
-	private final int probability;
-	private final WGOFactory factory;
-
-	public WorldGeneratorObjectPopulator(int probability, WGOFactory factory) {
-		this.probability = probability;
-		this.factory = factory;
-	}
-	@Override
-	public void populate(Chunk chunk, Random random) {
-		if (random.nextInt(probability) == 0) {
-			final World world = chunk.getWorld();
-			final int worldX = chunk.getBlockX() + random.nextInt(16);
-			final int worldY = chunk.getBlockY() + random.nextInt(16);
-			final int worldZ = chunk.getBlockZ() + random.nextInt(16);
-			WorldGeneratorObject dungeon = factory.createObject(random);
-			if (dungeon.canPlaceObject(world, worldX, worldY, worldZ)) {
-				dungeon.placeObject(world, worldX, worldY, worldZ);
-			}
-		}
-	}
-
-	public interface WGOFactory {
-		WorldGeneratorObject createObject(Random random);
-	}
+public interface StyleFormatter {
+	public String format(String text);
 }

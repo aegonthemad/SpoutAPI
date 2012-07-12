@@ -38,18 +38,18 @@ import org.spout.api.protocol.bootstrap.BootstrapProtocol;
 import org.spout.api.protocol.common.message.CustomDataMessage;
 
 public class CommonBootstrapProtocol extends BootstrapProtocol {
-	
+
 	private final Protocol defaultProtocol;
 
 	public CommonBootstrapProtocol(Protocol defaultProtocol) {
 		this("CommonBootstrap", defaultProtocol);
 	}
 
-	
+
 	public CommonBootstrapProtocol(String name, Protocol defaultProtocol) {
 		this(name, new CommonBootstrapCodecLookupService(), new CommonBootstrapHandlerLookupService(), defaultProtocol);
 	}
-	
+
 	public CommonBootstrapProtocol(String name, CodecLookupService codecLookup, HandlerLookupService handlerLookup, Protocol defaultProtocol) {
 		super(name, codecLookup, handlerLookup);
 		this.defaultProtocol = defaultProtocol;
@@ -73,12 +73,12 @@ public class CommonBootstrapProtocol extends BootstrapProtocol {
 		}
 		return null;
 	}
-	
+
 	@Override
 	public Protocol getDefaultProtocol() {
 		return defaultProtocol;
 	}
-	
+
 	/**
 	 * Reads a string from the buffer.
 	 * @param buf The buffer.
@@ -87,7 +87,7 @@ public class CommonBootstrapProtocol extends BootstrapProtocol {
 	 */
 	public static String readString(ChannelBuffer buf, int maxLength) {
 		int len = buf.readUnsignedShort();
-		
+
 		if (len > maxLength) {
 			Spout.getEngine().getLogger().severe("Maximum string length of " + maxLength + " exceeded (" + len + ")");
 			return null;
@@ -101,7 +101,7 @@ public class CommonBootstrapProtocol extends BootstrapProtocol {
 
 		return new String(characters);
 	}
-	
+
 	/**
 	 * Writes a string to the buffer.
 	 * @param buf The buffer.
@@ -120,5 +120,20 @@ public class CommonBootstrapProtocol extends BootstrapProtocol {
 			buf.writeChar(str.charAt(i));
 		}
 	}
+	
+	@Override
+	public Message getKickMessage(Object... message) {
+		return null;
+	}
 
+
+	@Override
+	public Message getChatMessage(Object... message) {
+		return null;
+	}
+
+	@Override
+	public Message getIntroductionMessage(String message) {
+		return null;
+	}
 }

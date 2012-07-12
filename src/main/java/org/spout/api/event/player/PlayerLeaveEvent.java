@@ -26,18 +26,20 @@
  */
 package org.spout.api.event.player;
 
+import java.util.List;
+
 import org.spout.api.event.HandlerList;
 import org.spout.api.player.Player;
 
 /**
- * Called when a player leaves the server.
+ * Called when a player leaves the server, including when they are kicked.
  */
 public class PlayerLeaveEvent extends PlayerEvent {
 	private static HandlerList handlers = new HandlerList();
 
-	private String message;
+	private Object[] message;
 
-	public PlayerLeaveEvent(Player p, String message) {
+	public PlayerLeaveEvent(Player p, Object... message) {
 		super(p);
 		this.message = message;
 	}
@@ -45,18 +47,21 @@ public class PlayerLeaveEvent extends PlayerEvent {
 	/**
 	 * Gets the message to be sent to all players when leaving.
 	 *
-	 * @return
+	 * @return message to be sent.
 	 */
-	public String getMessage() {
+	public Object[] getMessage() {
 		return message;
 	}
 
 	/**
 	 * Sets the message to be sent to all players when leaving.
 	 *
-	 * @param message
+	 * @param message to be sent.
 	 */
-	public void setMessage(String message) {
+	public void setMessage(Object... message) {
+		if (message.length == 1 && message[0] instanceof List<?>) {
+			message = ((List<?>) message[0]).toArray();
+		}
 		this.message = message;
 	}
 

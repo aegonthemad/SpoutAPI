@@ -30,14 +30,15 @@ import org.spout.api.event.HandlerList;
 import org.spout.api.player.Player;
 
 /**
- * Called when a player joins.
+ * Called when a player joins the server, this event can be disallowed to prevent the Player from logging in.<br/>
+ * This is called after the {@link PlayerPreLoginEvent} and {@link PlayerLoginEvent} have both completed.
  */
 public class PlayerJoinEvent extends PlayerEvent {
 	private static HandlerList handlers = new HandlerList();
-	
-	private String message;
 
-	public PlayerJoinEvent(Player p, String joinMessage) {
+	private Object[] message;
+
+	public PlayerJoinEvent(Player p, Object... joinMessage) {
 		super(p);
 		this.message = joinMessage;
 	}
@@ -45,11 +46,16 @@ public class PlayerJoinEvent extends PlayerEvent {
 	/**
 	 * @return the message that will be broadcast when a player joins, or null for no message
 	 */
-	public String getMessage() {
+	public Object[] getMessage() {
 		return message;
 	}
-	
-	public void setMessage(String message) {
+
+	/**
+	 * Sets the message text that will be displayed when the player joins the server.
+	 * 
+	 * @param message to be set
+	 */
+	public void setMessage(Object... message) {
 		this.message = message;
 	}
 

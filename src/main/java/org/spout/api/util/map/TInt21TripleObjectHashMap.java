@@ -27,7 +27,6 @@
 package org.spout.api.util.map;
 
 import java.util.Collection;
-
 import org.spout.api.util.hashing.Int21TripleHashed;
 
 import gnu.trove.iterator.TLongObjectIterator;

@@ -45,6 +45,7 @@ import org.spout.api.material.BlockMaterial;
 import org.spout.api.player.Player;
 import org.spout.api.plugin.Plugin;
 import org.spout.api.scheduler.TaskManager;
+import org.spout.api.util.Named;
 import org.spout.api.util.cuboid.CuboidBuffer;
 import org.spout.api.util.thread.LiveRead;
 import org.spout.api.util.thread.LiveWrite;
@@ -54,7 +55,7 @@ import org.spout.api.util.thread.Threadsafe;
 /**
  * Represents a World.
  */
-public interface World extends Source, AreaRegionAccess, AreaPhysicsAccess {
+public interface World extends Source, AreaRegionAccess, AreaPhysicsAccess, Named {
 
 	/**
 	 * Gets the name of the world
@@ -62,6 +63,7 @@ public interface World extends Source, AreaRegionAccess, AreaPhysicsAccess {
 	 * @return the name of the world
 	 */
 	@SnapshotRead
+	@Override
 	public String getName();
 
 	/**
@@ -258,6 +260,22 @@ public interface World extends Source, AreaRegionAccess, AreaPhysicsAccess {
 	public int getHeight();
 
 	/**
+	 * Gets the light level the sky emits<br>
+	 * Block sky light levels are affected by this
+	 * 
+	 * @return the sky light, a level from 0 to 15
+	 */
+	public byte getSkyLight();
+
+	/**
+	 * Sets the light level the sky emits<br>
+	 * Block sky light levels are affected by this
+	 * 
+	 * @param newLight level from 0 to 15 for the sky light
+	 */
+	public void setSkyLight(byte newLight);
+
+	/**
 	 * Gets all entities with the specified type.
 	 *
 	 * @param type The {@link Class} for the type.
@@ -301,6 +319,13 @@ public interface World extends Source, AreaRegionAccess, AreaPhysicsAccess {
 	 * @return data map
 	 */
 	public DefaultedMap<String, Serializable> getDataMap();
+
+    /**
+     * Gets a value from the data map by providing a key. Data will persist across restarts.
+     * @param key The key to lookup a value from the map
+     * @return the data stored for this key or null if no data found.
+     */
+    public Serializable get(Object key);
 
 	/**
 	 * Gets the task manager responsible for parallel region tasks.<br>

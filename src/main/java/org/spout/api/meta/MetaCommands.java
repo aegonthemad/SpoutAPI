@@ -24,48 +24,26 @@
  * License and see <http://www.spout.org/SpoutDevLicenseV1.txt> for the full license,
  * including the MIT license.
  */
-package org.spout.api;
+package org.spout.api.meta;
 
-import static org.junit.Assert.assertEquals;
+import org.spout.api.Spout;
+import org.spout.api.command.CommandContext;
+import org.spout.api.command.CommandSource;
+import org.spout.api.command.annotated.Command;
+import org.spout.api.command.annotated.CommandPermissions;
+import org.spout.api.exception.CommandException;
 
-import org.junit.Test;
-
-/**
- * Tests for ChatColor
- */
-public class ChatColorTest {
-	@Test
-	public void testFromCodeString() {
-		for (ChatColor color : ChatColor.values()) {
-			assertEquals("Color failed: " + color.name(), color, ChatColor.byName(color.toString()));
-		}
+public class MetaCommands {
+	
+	/**
+	 * Interface for runtime variable setting
+	 * 
+	 */
+	@Command(aliases = {"set"}, usage = "<variable name> <value>", desc = "Sets an engine variable", min = 2, max = 2)
+	@CommandPermissions("spout.console.set")
+	public void set(CommandContext args, CommandSource source) throws CommandException{
+		Spout.getEngine().setVariable(args.getString(0), args.getString(1));		
 	}
-
-	@Test
-	public void testFromName() {
-		for (ChatColor color : ChatColor.values()) {
-			assertEquals("Color failed: " + color.name(), color, ChatColor.byName(color.name()));
-		}
-	}
-
-	@Test
-	public void testFromId() {
-		for (ChatColor color : ChatColor.values()) {
-			assertEquals("Color failed: " + color.name(), color, ChatColor.byCode(color.getCode()));
-		}
-	}
-
-	@Test
-	public void testStripColor() {
-		StringBuilder builder = new StringBuilder();
-		for (ChatColor color : ChatColor.values()) {
-			builder.append(color);
-		}
-		assertEquals(ChatColor.strip(builder.toString()), "");
-	}
-
-	@Test
-	public void testStripColor2() {
-		assertEquals(ChatColor.strip(ChatColor.GOLD + "This " + ChatColor.BLUE + "is a " + ChatColor.BRIGHT_GREEN + "colored " + ChatColor.WHITE + "string."), "This is a colored string.");
-	}
+	
+	
 }

@@ -41,17 +41,13 @@ public class ShapelessRecipe implements Recipe {
 	private final Plugin plugin;
 	private final ItemStack result;
 	private final List<Material> ingredients;
+	private final boolean includeData;
 
-	public ShapelessRecipe(Plugin plugin, ItemStack result, List<Material> ingredients) {
-		this.plugin = plugin;
-		this.result = result;
-		this.ingredients = ingredients;
-	}
-
-	public ShapelessRecipe(RecipeBuilder<?> builder) {
+	public ShapelessRecipe(RecipeBuilder builder) {
 		this.plugin = builder.plugin;
 		this.result = builder.result;
 		this.ingredients = builder.ingredients;
+		this.includeData = builder.includeData;
 	}
 
 	@Override
@@ -67,6 +63,11 @@ public class ShapelessRecipe implements Recipe {
 	@Override
 	public Plugin getPlugin() {
 		return plugin;
+	}
+
+	@Override
+	public boolean getIncludeData() {
+		return includeData;
 	}
 
 	@Override

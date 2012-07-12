@@ -29,6 +29,7 @@ package org.spout.api.protocol;
 import java.io.Serializable;
 import java.net.InetSocketAddress;
 
+import org.jboss.netty.channel.Channel;
 import org.spout.api.Engine;
 import org.spout.api.map.DefaultedMap;
 import org.spout.api.player.Player;
@@ -55,6 +56,13 @@ public interface Session {
 	public void setProtocol(Protocol protocol);
 
 	/**
+	 * Gets the protocol associated with this session.
+	 *
+	 * @return the protocol (Bootstrap until set)
+	 */
+	public Protocol getProtocol();
+
+	/**
 	 * Gets the state of this session.
 	 *
 	 * @return The session's state.
@@ -78,10 +86,10 @@ public interface Session {
 	/**
 	 * Sends a message to the client.
 	 *
-	 * @param message The message.
 	 * @param force if this message is used in the identification stages of communication
+	 * @param message The message.
 	 */
-	public void send(Message message, boolean force);
+	public void send(boolean force, Message message);
 
 	/**
 	 * Sends any amount of messages to the client
@@ -100,7 +108,7 @@ public interface Session {
 	 * @param reason The reason for disconnection
 	 * @return Whether the player was actually disconnected
 	 */
-	public boolean disconnect(String reason);
+	public boolean disconnect(Object... reason);
 
 	/**
 	 * Disconnects the session with the specified reason. When the kick packet has been delivered,
@@ -111,7 +119,7 @@ public interface Session {
 	 *             Disconnects are only cancellable when the disconnection is a kick
 	 * @return Whether the player was actually disconnected. This can be false if the kick event is cancelled or errors occur
 	 */
-	public boolean disconnect(String reason, boolean kick);
+	public boolean disconnect(boolean kick, Object... reason);
 	/**
 	 * Returns the address of this session.
 	 *

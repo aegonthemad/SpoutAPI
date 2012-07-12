@@ -38,10 +38,8 @@ import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
 
 /**
- * A {@link SimpleChannelUpstreamHandler} which processes incoming network
- * events.
+ * A {@link SimpleChannelUpstreamHandler} which processes incoming network events.
  *
- * @author Graham Edgecombe.
  */
 public class CommonHandler extends SimpleChannelUpstreamHandler {
 	/**
