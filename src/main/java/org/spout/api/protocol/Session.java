@@ -119,7 +119,7 @@ public interface Session {
 	 *             Disconnects are only cancellable when the disconnection is a kick
 	 * @return Whether the player was actually disconnected. This can be false if the kick event is cancelled or errors occur
 	 */
-	public boolean disconnect(boolean kick, Object... reason);
+	public boolean disconnect(Boolean kick, Object... reason);
 	/**
 	 * Returns the address of this session.
 	 *
