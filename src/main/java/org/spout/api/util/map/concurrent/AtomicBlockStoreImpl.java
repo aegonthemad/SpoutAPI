@@ -50,7 +50,6 @@ public final class AtomicBlockStoreImpl implements AtomicBlockStore {
 	private final byte[] dirtyY;
 	private final byte[] dirtyZ;
 	private final AtomicInteger dirtyBlocks = new AtomicInteger(0);
-	private final AtomicInteger waiting = new AtomicInteger(0);
 	private final int SPINS = 10;
 
 	public AtomicBlockStoreImpl(int shift) {
@@ -74,25 +73,23 @@ public final class AtomicBlockStoreImpl implements AtomicBlockStore {
 		this.shift = shift;
 		this.doubleShift = shift << 1;
 		int size = side * side * side;
-		blockIds = new AtomicShortArray(size);
-		auxStore = new AtomicIntArrayStore(size);
+		blockIds = new AtomicShortArray(size, blocks);
+		auxStore = new AtomicIntArrayStore(size); //TODO: Optimization!
 		dirtyX = new byte[dirtySize];
 		dirtyY = new byte[dirtySize];
 		dirtyZ = new byte[dirtySize];
-		if (blocks != null) {
+		if (blocks != null && data != null) {
 			int x = 0;
 			int z = 0;
 			int y = 0;
 			int max = (1 << shift) - 1;
 
 			for (int i = 0; i < Math.min(blocks.length, size); i++) {
-				short d = 0;
-				if (data != null) {
-					d = data[i];
+				short d = data[i];
+				if (d != 0) {
+					this.setBlock(x, y, z, blocks[i], d);
 				}
-				
-				this.setBlock(x, y, z, blocks[i], d);
-				
+
 				if (x < max) {
 					x++;
 				} else {
@@ -135,7 +132,7 @@ public final class AtomicBlockStoreImpl implements AtomicBlockStore {
 		try {
 			while (true) {
 				if (spins++ > SPINS) {
-					interrupted |= atomicWait();
+					interrupted |= atomicWait(index);
 				}
 				checkCompressing();
 
@@ -205,7 +202,7 @@ public final class AtomicBlockStoreImpl implements AtomicBlockStore {
 		try {
 			while (true) {
 				if (spins++ > SPINS) {
-					interrupted |= atomicWait();
+					interrupted |= atomicWait(index);
 				}
 				checkCompressing();
 
@@ -244,7 +241,7 @@ public final class AtomicBlockStoreImpl implements AtomicBlockStore {
 		try {
 			while (true) {
 				if (spins++ > SPINS) {
-					interrupted |= atomicWait();
+					interrupted |= atomicWait(index);
 				}
 				checkCompressing();
 
@@ -282,7 +279,7 @@ public final class AtomicBlockStoreImpl implements AtomicBlockStore {
 		try {
 			while (true) {
 				if (spins++ > SPINS) {
-					interrupted |= atomicWait();
+					interrupted |= atomicWait(index);
 				}
 				checkCompressing();
 
@@ -377,7 +374,7 @@ public final class AtomicBlockStoreImpl implements AtomicBlockStore {
 		try {
 			while (true) {
 				if (spins++ > SPINS) {
-					interrupted |= atomicWait();
+					interrupted |= atomicWait(index);
 				}
 				checkCompressing();
 
@@ -403,7 +400,7 @@ public final class AtomicBlockStoreImpl implements AtomicBlockStore {
 			}
 		} finally {
 			markDirty(x, y, z);
-			atomicNotify();
+			atomicNotify(index);
 			if (interrupted) {
 				Thread.currentThread().interrupt();
 			}
@@ -432,7 +429,7 @@ public final class AtomicBlockStoreImpl implements AtomicBlockStore {
 		try {
 			while (true) {
 				if (spins++ > SPINS) {
-					interrupted |= atomicWait();
+					interrupted |= atomicWait(index);
 				}
 				checkCompressing();
 
@@ -475,7 +472,7 @@ public final class AtomicBlockStoreImpl implements AtomicBlockStore {
 				return true;
 			}
 		} finally {
-			atomicNotify();
+			atomicNotify(index);
 			if (interrupted) {
 				Thread.currentThread().interrupt();
 			}
@@ -493,7 +490,7 @@ public final class AtomicBlockStoreImpl implements AtomicBlockStore {
 	public final boolean needsCompression() {
 		int entries = auxStore.getEntries();
 		int size = auxStore.getSize();
-		return size > 1 && (entries << 3) / 3 < size;
+		return auxStore.isAboveMinimumSize() && (entries << 3) / 3 < size;
 	}
 
 	/**
@@ -645,8 +642,8 @@ public final class AtomicBlockStoreImpl implements AtomicBlockStore {
 	/**
 	 * Resets the dirty arrays
 	 */
-	public void resetDirtyArrays() {
-		dirtyBlocks.set(0);
+	public boolean resetDirtyArrays() {
+		return dirtyBlocks.getAndSet(0) > 0;
 	}
 
 	/**
@@ -703,30 +700,38 @@ public final class AtomicBlockStoreImpl implements AtomicBlockStore {
 	 *
 	 * @return true if interrupted during the wait
 	 */
-	private boolean atomicWait() {
-		waiting.incrementAndGet();
+	private final boolean atomicWait(int index) {
+		AtomicInteger i = auxStore.getWaiting(index);
+		i.incrementAndGet();
 		try {
-			synchronized (this) {
+			short blockId = blockIds.get(index);
+			boolean reserved = auxStore.isReserved(blockId);
+			synchronized (i) {
+				if (!reserved || !auxStore.testUnstable(blockId)) {
+					return false;
+				}
 				try {
-					wait();
+					i.wait();
 				} catch (InterruptedException e) {
 					return true;
 				}
 			}
 		} finally {
-			waiting.decrementAndGet();
+			i.decrementAndGet();
 		}
-		return true;
+		return false;
 	}
 
 	/**
 	 * Notifies all waiting threads
 	 */
-	private void atomicNotify() {
-		if (waiting.getAndAdd(0) > 0) {
-			synchronized (this) {
-				notifyAll();
+	private final void atomicNotify(int index) {
+		AtomicInteger i = auxStore.getWaiting(index);
+		if (!i.compareAndSet(0, 0)) {
+			synchronized (i) {
+				i.notifyAll();
 			}
 		}
 	}
+
 }

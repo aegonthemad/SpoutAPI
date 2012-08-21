@@ -26,17 +26,18 @@
  */
 package org.spout.api.tickable;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
-import org.spout.api.UnsafeMethod;
-
-public class Tickable implements ITickable {
+public interface Tickable {
 	/**
-	 * A set of active processes to have {@link LogicRunnable#shouldRun(float)} called every tick.
+	 * Called each simulation tick.<br/>
+	 * 1       tick  = 1/20 second<br/>
+	 * 20      ticks = 1 second<br/>
+	 * 1200    ticks = 1 minute<br/>
+	 * 72000   ticks = 1 hour<br/>
+	 * 1728000 ticks = 1 day
+	 *
+	 * @param dt time since the last tick in seconds
 	 */
-	protected final List<LogicRunnable<Tickable>> activeProcesses = new ArrayList<LogicRunnable<Tickable>>();
+	public void onTick(float dt);
 
 	/**
 	 * Called each simulation tick.<br/>
@@ -45,47 +46,25 @@ public class Tickable implements ITickable {
 	 * 1200    ticks = 1 minute<br/>
 	 * 72000   ticks = 1 hour<br/>
 	 * 1728000 ticks = 1 day
-	 * Handles the active processes in the Tickable and calls {@link Tickable#onTick(float)}
+	 * Handles the active processes in the Tickable and calls {@link BasicTickable#onTick(float)}
 	 * 
 	 * @param dt time since the last tick in seconds
 	 */
-	public final void tick(float dt) {
-		Collections.sort(activeProcesses);
-		for (int i = 0; i < activeProcesses.size(); i++) {
-			LogicRunnable<Tickable> process = activeProcesses.get(i);
-			if (process != null && process.shouldRun(dt)) {
-				process.run();
-				if (process instanceof TimedLogicRunnable && !((TimedLogicRunnable<?>) process).loops()) {
-					unregisterProcess(process);
-				}
-			}
-		}
-		onTick(dt);
-	}
+	public void tick(float dt);
 
 	/**
 	 * Registers a new process for the Tickable.
 	 * Calls {@link LogicRunnable#onRegistration()}
 	 * @param process
+	 * @return the process
 	 */
-	@SuppressWarnings("unchecked")
-	public void registerProcess(LogicRunnable<?> process) {
-		activeProcesses.add((LogicRunnable<Tickable>) process);
-		process.onRegistration();
-	}
+	public <T extends LogicRunnable<?>> T registerProcess(T process);
 
 	/**
 	 * Unregisters a process for the Tickable.
 	 * Calls {@link LogicRunnable#onUnregistration()}
 	 * @param process
+	 * @return the process
 	 */
-	public void unregisterProcess(LogicRunnable<?> process) {
-		activeProcesses.remove(process);
-		process.onUnregistration();
-	}
-
-	@Override
-	@UnsafeMethod
-	public void onTick(float dt) {
-	}
+	public <T extends LogicRunnable<?>> T unregisterProcess(T process);
 }

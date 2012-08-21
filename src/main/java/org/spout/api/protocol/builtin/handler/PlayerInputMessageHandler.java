@@ -28,31 +28,19 @@ package org.spout.api.protocol.builtin.handler;
 
 import org.spout.api.player.Player;
 import org.spout.api.player.PlayerInputState;
-import org.spout.api.protocol.MessageHandler;
+import org.spout.api.protocol.ServerMessageHandler;
 import org.spout.api.protocol.Session;
 import org.spout.api.protocol.builtin.message.PlayerInputMessage;
 
-public class PlayerInputMessageHandler extends MessageHandler<PlayerInputMessage> {
+public class PlayerInputMessageHandler implements ServerMessageHandler<PlayerInputMessage> {
 	@Override
-	public void handleServer(Session session, Player player, PlayerInputMessage message) {
-		PlayerInputState input = player.input();
-		if (message.isFwd()) {
-			input.setForward(1);
-		} else if (message.isBack()) {
-			input.setForward(-1);
-		} else {
-			input.setForward(0);
+	public void handle(Session session, PlayerInputMessage message) {
+		if(!session.hasPlayer()) {
+			return;
 		}
-
-		if (message.isLeft()) {
-			input.setHorizantal(1);
-		} else if (message.isRight()) {
-			input.setHorizantal(-1);
-		} else {
-			input.setHorizantal(0);
-		}
-
-		input.setLookX(message.getMouseDx());
-		input.setLookY(message.getMouseDy());
+		
+		Player player = session.getPlayer();
+	    PlayerInputState inputState = new PlayerInputState(message.getInputFlags(), (byte)message.getMouseDx(), (byte)message.getMouseDy() );
+		player.processInput(inputState);
 	}
 }

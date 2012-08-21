@@ -26,20 +26,39 @@
  */
 package org.spout.api.protocol;
 
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
+
+import org.apache.commons.lang3.tuple.Pair;
+import org.jboss.netty.buffer.ChannelBuffer;
+import org.spout.api.Spout;
+import org.spout.api.chat.ChatArguments;
+import org.spout.api.command.Command;
+import org.spout.api.exception.UnknownPacketException;
+import org.spout.api.io.store.simple.MemoryStore;
+import org.spout.api.player.Player;
+import org.spout.api.util.StringMap;
 
 public abstract class Protocol {
 	private static final ConcurrentHashMap<String, Protocol> map = new ConcurrentHashMap<String, Protocol>();
 
+	private final StringMap dynamicPacketLookup;
 	private final CodecLookupService codecLookup;
 	private final HandlerLookupService handlerLookup;
 	private final String name;
+	private final int defaultPort;
 
-	public Protocol(String name, CodecLookupService codecLookup,
-			HandlerLookupService handlerLookup) {
+	public Protocol(String name, int defaultPort, CodecLookupService codecLookup, HandlerLookupService handlerLookup) {
 		this.codecLookup = codecLookup;
 		this.handlerLookup = handlerLookup;
+		this.defaultPort = defaultPort;
 		this.name = name;
+		this.dynamicPacketLookup = new StringMap(null, new MemoryStore<Integer>(), Integer.MAX_VALUE, Integer.MAX_VALUE, this.name + "ProtocolDynamicPackets");
 	}
 
 	/**
@@ -70,30 +89,115 @@ public abstract class Protocol {
 	}
 
 	/**
-	 * Gets a message for kicking a player
+	 * The default port is the port used when autogenerating default bindings for this
+	 * protocol and in the client when no port is given.
 	 * 
-	 * @param message
-	 * @return
+	 * @return The default port
 	 */
-	public abstract Message getKickMessage(Object... message);
+	public int getDefaultPort() {
+		return defaultPort;
+	}
 
 	/**
-	 * Gets a chat message for a given string
+	 * Register a custom packet with this protocol
 	 * 
-	 * @param message
-	 * @return
+	 * @param codecClazz The packet's codec
+	 * @param <T> The type of Message this codec handles
+	 * @param <C> The codec's type
+	 * @return The instantiated codec
 	 */
-	public abstract Message getChatMessage(Object... message);
+	public <T extends Message, C extends MessageCodec<T>> C registerPacket(Class<C> codecClazz, MessageHandler<T> handler) {
+		try {
+			C codec = getCodecLookupService().bind(codecClazz, dynamicPacketLookup);
+			if (handler != null) {
+				getHandlerLookupService().bind(codec.getType(), handler);
+			}
+			return codec;
+		} catch (InstantiationException e) {
+			Spout.getLogger().log(Level.SEVERE, "Error registering codec " + codecClazz + ": ", e);
+			return null;
+		} catch (IllegalAccessException e) {
+			Spout.getLogger().log(Level.SEVERE, "Error registering codec " + codecClazz + ": ", e);
+			return null;
+		} catch (InvocationTargetException e) {
+			Spout.getLogger().log(Level.SEVERE, "Error registering codec " + codecClazz + ": ", e);
+			return null;
+		}
+	}
+
+	public List<Pair<Integer, String>> getDynamicallyRegisteredPackets() {
+		return dynamicPacketLookup.getItems();
+	}
 
 	/**
-	 * Gets the introduction message that the client sends to the server on
-	 * connect
-	 * 
-	 * @param playerName
-	 *            the name of the player
+	 * Allows applying a wrapper to messages with dynamically allocated id's, in case this protocol needs to provide special treatment for them.
+	 *
+	 * @param dynamicMessage The message with a dynamically-allocated codec
+	 * @return The new message
+	 */
+	public <T extends Message> Message getWrappedMessage(T dynamicMessage) throws IOException {
+		return dynamicMessage;
+	}
+
+	/**
+	 * Read a packet header from the buffer. If a codec is not available and packet length is known, skip ahead in the buffer and return null.
+	 * If packet length is not known, throw a {@link org.spout.api.exception.UnknownPacketException}
+	 *
+	 * @param buf The buffer to read from
+	 * @return The correct codec
+	 * @throws UnknownPacketException when the opcode does not have an associated codec and the packet length is unknown
+	 */
+	public abstract MessageCodec<?> readHeader(ChannelBuffer buf) throws UnknownPacketException;
+
+	/**
+	 * Writes a packet header to a new buffer.
+	 *
+	 * @param codec The codec the message was written with
+	 * @param data The data from the encoded message
+	 * @return The buffer with the packet header
+	 */
+	public abstract ChannelBuffer writeHeader(MessageCodec<?> codec, ChannelBuffer data);
+
+	/**
+	 * Gets a packet for kicking a player
+	 *
+	 * @param message The kick reason
+	 * @return The kick message
+	 */
+	public abstract Message getKickMessage(ChatArguments message);
+
+	/**
+	 * Gets a command packet for a given {@link Command} and {@link ChatArguments}
+	 *
+	 * @param command The command to execute
+	 * @return The command packet
+	 */
+	public abstract Message getCommandMessage(Command command, ChatArguments arguments);
+
+	/**
+	 * Gets the introduction message that the client sends to the server on connect
+	 *
+	 * @param playerName the name of the player
 	 * @return the message, or null if there is no message
 	 */
 	public abstract Message getIntroductionMessage(String playerName);
+
+	/**
+	 * Set up the initial data for the given session.
+	 * This method is called in between {@link org.spout.api.event.player.PlayerLoginEvent}
+	 * and {@link org.spout.api.event.player.PlayerJoinEvent}. Game plugins should have set
+	 *
+	 * @param session The session to set data for
+	 */
+	public abstract void initializeSession(Session session);
+	
+	/**
+	 * Sets the player controller for the given entity.  The method is called while the player 
+	 * is being spawned by the server in response to a {@link org.spout.api.event.player.PlayerConnectEvent}
+	 * 
+	 * @param player
+	 */
+	public abstract void setPlayerController(Player player);
 
 	/**
 	 * Registers a Protocol for a particular id value
@@ -108,6 +212,15 @@ public abstract class Protocol {
 	}
 
 	/**
+	 * Registers a Protocol under its name
+	 *
+	 * @param protocol the Protocol
+	 */
+	public static void registerProtocol(Protocol protocol) {
+		map.put(protocol.getName(), protocol);
+	}
+
+	/**
 	 * Gets the Protocol associated with a particular id
 	 * 
 	 * @param id
@@ -116,5 +229,15 @@ public abstract class Protocol {
 	 */
 	public static Protocol getProtocol(String id) {
 		return map.get(id);
+	}
+
+	/**
+	 * Returns all protocols currently registered.
+	 * The returned collection is unmodifiable.
+	 *
+	 * @return All registered protocols
+	 */
+	public static Collection<Protocol> getProtocols() {
+		return Collections.unmodifiableCollection(map.values());
 	}
 }

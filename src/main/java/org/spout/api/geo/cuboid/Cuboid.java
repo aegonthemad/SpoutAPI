@@ -28,19 +28,20 @@ package org.spout.api.geo.cuboid;
 
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.spout.api.geo.World;
+import org.spout.api.geo.WorldSource;
 import org.spout.api.geo.discrete.Point;
 import org.spout.api.math.Vector3;
 
 /**
  * Represents a Cuboid shaped volume that is located somewhere in a world.
  */
-public class Cuboid {
+public class Cuboid implements WorldSource {
 	protected final Point base;
 	protected final Vector3 size;
 	private final int x;
 	private final int y;
 	private final int z;
-	
+
 	/**
 	 * Hashcode caching
 	 */
@@ -48,7 +49,13 @@ public class Cuboid {
 	private volatile int hashcode = 0;
 
 	/**
-	 * Constructs a cubiod with the point as the base point, and 
+	 * Vertex cache
+	 */
+	private Vector3[] vertices = null;
+
+	/**
+	 * Constructs a cubiod with the point as the base point, and
+	 * 
 	 * @param base
 	 * @param size
 	 */
@@ -71,7 +78,7 @@ public class Cuboid {
 	public int getX() {
 		return x;
 	}
-	
+
 	public int getY() {
 		return y;
 	}
@@ -80,8 +87,38 @@ public class Cuboid {
 		return z;
 	}
 
+	@Override
 	public World getWorld() {
 		return base.getWorld();
+	}
+
+	/**
+	 * Returns the vertices of this Cuboid.
+	 * 
+	 * @return The vertices
+	 */
+	public Vector3[] getVertices() {
+		if (vertices == null) {
+			vertices = new Vector3[8];
+
+			// Front
+			vertices[0] = new Vector3(base.getX(), base.getY(), base.getZ() + size.getZ());
+			vertices[1] = new Vector3(base.getX() + size.getX(), base.getY(), base.getZ() + size.getZ());
+			vertices[2] = new Vector3(base.getX() + size.getX(), base.getY() + size.getY(), base.getZ() + size.getZ());
+			vertices[3] = new Vector3(base.getX(), base.getY() + size.getY(), base.getZ() + size.getZ());
+			// Back
+			vertices[4] = new Vector3(base.getX(), base.getY(), base.getZ());
+			vertices[5] = new Vector3(base.getX() + size.getX(), base.getY(), base.getZ());
+			vertices[6] = new Vector3(base.getX() + size.getX(), base.getY() + size.getY(), base.getZ());
+			vertices[7] = new Vector3(base.getX(), base.getY() + size.getY(), base.getZ());
+		}
+
+		return vertices;
+	}
+
+	public boolean contains(Vector3 vec) {
+		Vector3 max = base.add(size);
+		return (base.getX() <= vec.getX() && vec.getX() < max.getX()) && (base.getY() <= vec.getY() && vec.getY() < max.getY()) && (base.getZ() <= vec.getZ() && vec.getZ() < max.getZ());
 	}
 
 	@Override

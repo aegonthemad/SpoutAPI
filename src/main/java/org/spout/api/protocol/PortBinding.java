@@ -24,23 +24,16 @@
  * License and see <http://www.spout.org/SpoutDevLicenseV1.txt> for the full license,
  * including the MIT license.
  */
-package org.spout.api.protocol.bootstrap;
+package org.spout.api.protocol;
 
-import org.spout.api.protocol.CodecLookupService;
-import org.spout.api.protocol.HandlerLookupService;
-import org.spout.api.protocol.Message;
-import org.spout.api.protocol.Protocol;
+import java.net.SocketAddress;
 
 /**
- *
- *
+ * Represents a bound address that the server is connected to.
  */
-public abstract class BootstrapProtocol extends Protocol {
-	public BootstrapProtocol(String name, CodecLookupService codecLookup, HandlerLookupService handlerLookup) {
-		super(name, codecLookup, handlerLookup);
-	}
+public interface PortBinding {
+	public Protocol getProtocol();
 
-	public abstract String detectProtocolDefinition(Message message);
+	public SocketAddress getAddress();
 
-	public abstract Protocol getDefaultProtocol();
 }

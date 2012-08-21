@@ -33,7 +33,7 @@ import org.spout.api.protocol.NetworkSynchronizer;
 import org.spout.api.protocol.Session;
 import org.spout.api.util.thread.Threadsafe;
 
-public interface Player extends CommandSource {
+public interface Player extends CommandSource, Entity {
 	/**
 	 * Gets the player's name. This method is thread-safe.
 	 *
@@ -57,20 +57,6 @@ public interface Player extends CommandSource {
 	 */
 	@Threadsafe
 	public void setDisplayName(String name);
-
-	/**
-	 * Sends a message as if the player had typed it into their chat gui.
-	 *
-	 * @param message the message to send
-	 */
-	public void chat(String message);
-
-	/**
-	 * Gets the entity corresponding to the player
-	 *
-	 * @return the entity, or null if the player is offline
-	 */
-	public Entity getEntity();
 
 	/**
 	 * Gets the NetworkSynchronizer associated with this player.<br>
@@ -118,4 +104,6 @@ public interface Player extends CommandSource {
 	 * @return current input state
 	 */
 	public PlayerInputState input();
+	
+	public void processInput(PlayerInputState state);
 }

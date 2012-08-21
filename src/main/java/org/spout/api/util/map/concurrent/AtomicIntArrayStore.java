@@ -56,6 +56,9 @@ public final class AtomicIntArrayStore {
 
 	private final int SPINS = 10;
 	private final int MAX_FAIL_THRESHOLD = 256;
+	private final int WAIT_COUNT = 32;
+	private final int WAIT_MASK = WAIT_COUNT - 1;
+	private final int INITIAL_MIN_SIZE = 16; // the initial size to resize to
 
 	private final int maxLength;
 	private final AtomicInteger length = new AtomicInteger(0);
@@ -66,8 +69,8 @@ public final class AtomicIntArrayStore {
 	private final AtomicReference<boolean[]> emptyArray;
 	private final AtomicReference<AtomicIntegerArray> seqArray;
 	private final AtomicReference<int[]> intArray;
-
-	private AtomicInteger waiting = new AtomicInteger(0);
+	
+	private AtomicInteger[] waiting;
 
 	public AtomicIntArrayStore(int maxEntries) {
 		this(maxEntries, 0.49);
@@ -88,6 +91,10 @@ public final class AtomicIntArrayStore {
 		seqArray = new AtomicReference<AtomicIntegerArray>(new AtomicIntegerArray(this.length.get()));
 		emptyArray = new AtomicReference<boolean[]>(new boolean[this.length.get()]);
 		emptyFill(emptyArray.get(), seqArray.get());
+		waiting = new AtomicInteger[WAIT_COUNT];
+		for (int i = 0; i < WAIT_COUNT; i++) {
+			waiting[i] = new AtomicInteger(0);
+		}
 	}
 
 	/**
@@ -123,7 +130,7 @@ public final class AtomicIntArrayStore {
 		boolean interrupted = false;
 		while (true) {
 			if (spins++ > SPINS) {
-				interrupted |= atomicWait();
+				interrupted |= atomicWait(index);
 			}
 			int initialSequence = seqArray.get().get(index);
 			if (initialSequence == DatatableSequenceNumber.UNSTABLE) {
@@ -168,6 +175,21 @@ public final class AtomicIntArrayStore {
 	 */
 	public boolean testSequence(int index, int expected) {
 		return seqArray.get().compareAndSet(toInternal(index), expected, expected);
+	}
+	
+	/**
+	 * Tests if the location referred to by a particular index is stable
+	 * 
+	 * @param index
+	 * @return true if stable
+	 */
+	public boolean testUnstable(int index) {
+		return testUnstableInternal(toInternal(index));
+	}
+	
+	private boolean testUnstableInternal(int index) {
+		int expected = DatatableSequenceNumber.UNSTABLE;
+		return seqArray.get().compareAndSet(index, expected, expected);
 	}
 
 	/**
@@ -233,7 +255,7 @@ public final class AtomicIntArrayStore {
 				return toExternal(testIndex);
 			} finally {
 				seqArray.get().set(testIndex, DatatableSequenceNumber.get());
-				atomicNotify();
+				atomicNotify(testIndex);
 			}
 		}
 	}
@@ -265,7 +287,7 @@ public final class AtomicIntArrayStore {
 				return oldInt;
 			} finally {
 				seqArray.get().set(index, DatatableSequenceNumber.get());
-				atomicNotify();
+				atomicNotify(index);
 			}
 		}
 	}
@@ -338,8 +360,8 @@ public final class AtomicIntArrayStore {
 			if (!seqArray.get().compareAndSet(i, DatatableSequenceNumber.UNSTABLE, DatatableSequenceNumber.get())) {
 				throw new IllegalStateException("Element " + i + " + was not locked when released by unlock");
 			}
+			atomicNotify(i);
 		}
-		atomicNotify();
 	}
 
 	/**
@@ -358,12 +380,18 @@ public final class AtomicIntArrayStore {
 		int lockedIndexes = length.get();
 		try {
 			// Calculate new length
-			int newLength = length.get() << 1;
-			if (newLength > maxLength || !needsResize()) {
+			final int oldLength = length.get();
+			final int oldLengthDoubled = oldLength << 1;
+			final int newLength;
+			if (oldLength >= maxLength || !needsResize()) {
 				return;
+			} else if (oldLengthDoubled < INITIAL_MIN_SIZE) {
+				newLength = INITIAL_MIN_SIZE;
+			} else {
+				newLength = oldLengthDoubled;
 			}
 
-			//
+			// Initialize the new length arrays
 			int[] newIntArray = new int[newLength];
 			boolean[] newEmptyArray = new boolean[newLength];
 			AtomicIntegerArray newSeqArray = new AtomicIntegerArray(newLength);
@@ -384,8 +412,6 @@ public final class AtomicIntArrayStore {
 			intArray.set(newIntArray);
 			emptyArray.set(newEmptyArray);
 			seqArray.set(newSeqArray);
-
-			int oldLength = length.get();
 
 			// Update the length, the array already has been lengthened, so this is safe
 			length.set(newLength);
@@ -456,7 +482,7 @@ public final class AtomicIntArrayStore {
 
 	/**
 	 * Indicates if the array needs resizing. An array is considered to need
-	 * resizing if it is more than 50% full.
+	 * resizing if it is at least 75% full.
 	 *
 	 * Once an array has a length of the maximum length, it is never considered
 	 * in need to resizing.
@@ -468,36 +494,64 @@ public final class AtomicIntArrayStore {
 		lengthThreshold -= lengthThreshold >> 2;
 		return length.get() < maxLength && entries.get() >= lengthThreshold;
 	}
+	
+	/**
+	 * Returns true if the array size is above minimum
+	 * 
+	 * @return
+	 */
+	public final boolean isAboveMinimumSize() {
+		return length.get() > this.INITIAL_MIN_SIZE;
+	}
 
 	/**
 	 * Waits until a notify
 	 *
 	 * @return true if interrupted during the wait
 	 */
-	private final boolean atomicWait() {
-		waiting.incrementAndGet();
+	private final boolean atomicWait(int index) {
+		AtomicInteger i = getWaitingInternal(index);
+		i.incrementAndGet();
 		try {
-			synchronized (this) {
+			synchronized (i) {
+				if (!testUnstableInternal(index)) {
+					return false;
+				}
 				try {
-					wait();
+					i.wait();
 				} catch (InterruptedException e) {
 					return true;
 				}
 			}
 		} finally {
-			waiting.decrementAndGet();
+			i.decrementAndGet();
 		}
-		return true;
+		return false;
 	}
 
 	/**
 	 * Notifies all waiting threads
 	 */
-	private final void atomicNotify() {
-		if (!waiting.compareAndSet(0, 0)) {
-			synchronized (this) {
-				notifyAll();
+	private final void atomicNotify(int index) {
+		AtomicInteger i = getWaitingInternal(index);
+		if (!i.compareAndSet(0, 0)) {
+			synchronized (i) {
+				i.notifyAll();
 			}
 		}
+	}
+	
+	/**
+	 * Gets the waiting counter for the given index
+	 * 
+	 * @param index
+	 * @return
+	 */
+	public final AtomicInteger getWaiting(int index) {
+		return getWaitingInternal(toInternal(index));
+	}
+	
+	private final AtomicInteger getWaitingInternal(int index) {
+		return waiting[index & WAIT_MASK];
 	}
 }

@@ -24,18 +24,19 @@
  * License and see <http://www.spout.org/SpoutDevLicenseV1.txt> for the full license,
  * including the MIT license.
  */
-package org.spout.api.tickable;
+package org.spout.api.data;
 
-public interface ITickable {
-	/**
-	 * Called each simulation tick.<br/>
-	 * 1       tick  = 1/20 second<br/>
-	 * 20      ticks = 1 second<br/>
-	 * 1200    ticks = 1 minute<br/>
-	 * 72000   ticks = 1 hour<br/>
-	 * 1728000 ticks = 1 day
-	 *
-	 * @param dt time since the last tick in seconds
-	 */
-	public void onTick(float dt);
+import org.spout.api.inventory.ItemStack;
+import org.spout.api.map.DefaultedKey;
+import org.spout.api.map.DefaultedKeyImpl;
+import org.spout.api.material.BlockMaterial;
+
+/**
+ * Common default data mappings one could expect each game to have. These are used instead of strings when retrieving values
+ * from an object that holds a datatable. IF you wish to provide your own keys for a plugin you are constructing, simply make a class
+ * and construct keys like the below.
+ */
+public class Data {
+	public static final DefaultedKey<String> TITLE = new DefaultedKeyImpl<String>("title", "");
+	public static final DefaultedKey<ItemStack> HELD_ITEM = new DefaultedKeyImpl<ItemStack>("held_item", new ItemStack(BlockMaterial.AIR, 1));
 }

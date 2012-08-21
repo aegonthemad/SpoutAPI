@@ -24,78 +24,17 @@
  * License and see <http://www.spout.org/SpoutDevLicenseV1.txt> for the full license,
  * including the MIT license.
  */
-package org.spout.api.event.player;
+package org.spout.api.event.server;
 
-import org.spout.api.event.Cancellable;
+import org.spout.api.event.Event;
 import org.spout.api.event.HandlerList;
-import org.spout.api.keyboard.Keyboard;
-import org.spout.api.player.Player;
 
 /**
- * Called when input from the player is detected.
- * Implements {@link Cancellable}. If cancelled, the system will ignore the key press or release occurring.
- *
+ * Called when the server has finished starting, but before the server has begun processing anything else.
  */
-public class PlayerKeyEvent extends PlayerEvent implements Cancellable {
-	private static HandlerList handlers = new HandlerList();
-
-	private Keyboard key;
-
-	private boolean pressed;
-
-	public PlayerKeyEvent(Player p) {
-		super(p);
-	}
-
-	/**
-	 * The key involved in the event.
-	 * 
-	 * @return key that is involved.
-	 */
-	public Keyboard getKey() {
-		return key;
-	}
-
-	/**
-	 * Set the key that is detected.
-	 * 
-	 * @param key
-	 */
-	public void setKey(Keyboard key) {
-		this.key = key;
-	}
-
-	/**
-	 * Checks if the key is currently being pressed during this event.
-	 * 
-	 * @return true, if pressed, otherwise false.
-	 */
-	public boolean isPressed() {
-		return pressed;
-	}
-
-	/**
-	 * Checks if the key is currently released.
-	 * 
-	 * @return true, if released, otherwise false.
-	 */
-	public boolean isReleased() {
-		return !pressed;
-	}
-
-	/**
-	 * Sets whether the key is being pressed, or released.
-	 * 
-	 * @param pressed
-	 */
-	public void setPressed(boolean pressed) {
-		this.pressed = pressed;
-	}
-
-	@Override
-	public void setCancelled(boolean cancelled) {
-		this.cancelled = cancelled;
-	}
+public class ServerStartEvent extends Event {
+	
+	private static final HandlerList handlers = new HandlerList();
 
 	@Override
 	public HandlerList getHandlers() {

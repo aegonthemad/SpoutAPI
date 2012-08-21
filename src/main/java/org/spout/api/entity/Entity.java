@@ -32,6 +32,7 @@ import org.spout.api.Source;
 import org.spout.api.collision.CollisionModel;
 import org.spout.api.entity.component.Controller;
 import org.spout.api.geo.World;
+import org.spout.api.geo.WorldSource;
 import org.spout.api.geo.cuboid.Chunk;
 import org.spout.api.geo.cuboid.Region;
 import org.spout.api.geo.discrete.Point;
@@ -47,7 +48,7 @@ import org.spout.api.util.thread.SnapshotRead;
 /**
  * Represents an entity, which may or may not be spawned into the world.
  */
-public interface Entity extends Source {
+public interface Entity extends Source, WorldSource, ComponentBase {
 
 	public int getId();
 
@@ -135,6 +136,7 @@ public interface Entity extends Source {
 	 * @return world
 	 */
 	@SnapshotRead
+	@Override
 	public World getWorld();
 
 	/**
@@ -190,7 +192,7 @@ public interface Entity extends Source {
 
 	/**
 	 * Checks whether or not the entity is currently observing the region it is in.<br/>
-	 * If this value does not match {@link #isObserverLive()} the entity will be changing it's observer status on the next update.<br/>
+	 * If this value does not match {@link #isObserverLive()} the entity will be changing its observer status on the next update.<br/>
 	 * An observer is any entity that is allowed to keep chunks from being unloaded.<br/>
 	 * 
 	 * @return true if the entity is currently an observer, false if not
@@ -200,7 +202,7 @@ public interface Entity extends Source {
 
 	/**
 	 * Checks whether or not the entity is observing. This is used to update the status of the entity.
-	 * If isObserverLive() not equal to isObserver(), then the entity will be changing it's observer status on the next update.
+	 * If isObserverLive() not equal to isObserver(), then the entity will be changing its observer status on the next update.
 	 * 
 	 * @return true if the entity will be an observer, false if not
 	 */
@@ -383,25 +385,4 @@ public interface Entity extends Source {
 	 * @param ang
 	 */
 	public void setYaw(float ang);
-
-	/**
-	 * Attaches a component to this entity. If it's already attached, it will fail silently.
-	 * 
-	 * @param component
-	 */
-	public void attachComponent(EntityComponent component);
-
-	/**
-	 * Removes a component from an entity. Fails silently if component does not exist.
-	 * 
-	 * @param component
-	 */
-	public void removeComponent(EntityComponent component);
-
-	/**
-	 * True if component is attached. False if not
-	 * 
-	 * @param component
-	 */
-	public boolean hasComponent(EntityComponent component);
 }

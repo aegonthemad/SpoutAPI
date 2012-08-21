@@ -32,6 +32,7 @@ import java.lang.reflect.Field;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.spout.api.Spout;
 import org.spout.api.geo.World;
+import org.spout.api.geo.WorldSource;
 import org.spout.api.geo.cuboid.Chunk;
 import org.spout.api.math.MathHelper;
 import org.spout.api.math.Vector3;
@@ -40,7 +41,7 @@ import org.spout.api.util.StringUtil;
 /**
  * Represents a position in a World
  */
-public class Point extends Vector3 {
+public class Point extends Vector3 implements WorldSource {
 	private static final long serialVersionUID = 1L;
 
 	protected final World world;
@@ -276,7 +277,8 @@ public class Point extends Vector3 {
 	 * Gets the world this point is locate in
 	 *
 	 * @return the world
-	 */
+	 */	
+	@Override
 	public World getWorld() {
 		return world;
 	}
@@ -300,9 +302,22 @@ public class Point extends Vector3 {
 		} else {
 			Point point = (Point) obj;
 
-			return point.world.equals(world) && point.x == x && point.y == y && point.z == z;
+			boolean worldEqual = point.world == world || (point.world != null && point.world.equals(world));
+			
+			return worldEqual && point.x == x && point.y == y && point.z == z;
 		}
 
+	}
+	
+	public boolean equals(Point point) {
+
+		if (point == this) {
+			return true;
+		} else {
+			boolean worldEqual = point.world == world || (point.world != null && point.world.equals(world));
+			
+			return worldEqual && point.x == x && point.y == y && point.z == z;
+		}
 	}
 
 	@Override

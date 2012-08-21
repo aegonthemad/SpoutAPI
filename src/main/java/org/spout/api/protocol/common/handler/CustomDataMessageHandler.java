@@ -27,7 +27,11 @@
 package org.spout.api.protocol.common.handler;
 
 import org.spout.api.protocol.MessageHandler;
+import org.spout.api.protocol.Session;
 import org.spout.api.protocol.common.message.CustomDataMessage;
 
-public class CustomDataMessageHandler extends MessageHandler<CustomDataMessage> {
+public class CustomDataMessageHandler implements MessageHandler<CustomDataMessage> {
+	@Override
+	public void handle(Session session, CustomDataMessage message) {
+	}
 }

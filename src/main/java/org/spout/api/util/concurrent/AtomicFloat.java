@@ -28,6 +28,8 @@ package org.spout.api.util.concurrent;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.google.common.base.Objects;
+
 /**
  * Implements an AtomicFloat class
  *
@@ -55,9 +57,7 @@ public class AtomicFloat extends Number {
 	}
 
 	public final void lazySet(float value) {
-		//TODO JDK 1.6?
-		set(value);
-		//this.value.lazySet(Float.floatToRawIntBits(value));
+		this.value.lazySet(Float.floatToRawIntBits(value));
 	}
 
 	public final float getAndSet(float value) {
@@ -89,12 +89,24 @@ public class AtomicFloat extends Number {
 
 	public final float addAndGet(float delta) {
 		return add(delta, false);
-
 	}
 
 	@Override
 	public String toString() {
 		return Float.toString(get());
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj instanceof AtomicFloat) {
+			return ((AtomicFloat)obj).get() == get();
+		}
+		return false;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hashCode(get());
 	}
 
 	@Override

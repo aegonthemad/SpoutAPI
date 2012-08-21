@@ -41,6 +41,7 @@ import org.spout.api.material.block.BlockFace;
 import org.spout.api.material.block.BlockFaces;
 import org.spout.api.material.range.EffectRange;
 import org.spout.api.math.MathHelper;
+import org.spout.api.math.Vector3;
 import org.spout.api.util.flag.ByteFlagContainer;
 
 /**
@@ -266,7 +267,8 @@ public class BlockMaterial extends Material implements Placeable {
 	 * @return this Block Material
 	 */
 	public BlockMaterial setOpaque() {
-		return this.setOpacity(15).setOcclusion(BlockFaces.NESWBT);
+		this.occlusion.set(BlockFaces.NESWBT);
+		return this.setOpacity(15);
 	}
 
 	/**
@@ -276,7 +278,8 @@ public class BlockMaterial extends Material implements Placeable {
 	 * @return this Block Material
 	 */
 	public BlockMaterial setTransparent() {
-		return this.setOpacity(0).setOcclusion(BlockFaces.NONE);
+		this.occlusion.set(BlockFaces.NONE);
+		return this.setOpacity(0);
 	}
 
 	/**
@@ -400,21 +403,39 @@ public class BlockMaterial extends Material implements Placeable {
 	}
 
 	/**
-	 * Gets the occluded faces of this Block Material<br>
+	 * Gets the occluded faces of this Block Material for the data value specified<br>
 	 * Occluded faces do not let light though and require rendering behind it at those faces
+	 * 
+	 * @param data value of the material
 	 * @return the occluded faces
 	 */
-	public ByteFlagContainer getOcclusion() {
+	public ByteFlagContainer getOcclusion(short data) {
 		return this.occlusion;
 	}
 
 	/**
-	 * Sets the occludes faces of this Block Material
+	 * Sets the occludes faces of this Block Material<br>
+	 * Occluded faces do not let light though and require rendering behind it at those faces
+	 * 
+	 * @param data of this Block Material
 	 * @param faces to make this Block Material occlude
 	 * @return this Block Material
 	 */
-	public BlockMaterial setOcclusion(BlockFaces faces) {
-		this.occlusion.set(faces);
+	public BlockMaterial setOcclusion(short data, BlockFaces faces) {
+		this.getOcclusion(data).set(faces);
+		return this;
+	}
+
+	/**
+	 * Sets the occludes face of this Block Material<br>
+	 * Occluded faces do not let light though and require rendering behind it at those faces
+	 * 
+	 * @param data of this Block Material
+	 * @param face to make this Block Material occlude
+	 * @return this Block Material
+	 */
+	public BlockMaterial setOcclusion(short data, BlockFace face) {
+		this.getOcclusion(data).set(face);
 		return this;
 	}
 
@@ -430,14 +451,24 @@ public class BlockMaterial extends Material implements Placeable {
 	}
 
 	@Override
-	public boolean canPlace(Block block, short data, BlockFace against, boolean isClickedBlock) {
+	public boolean canPlace(Block block, short data, BlockFace against, Vector3 clickedPos, boolean isClickedBlock) {
 		return true;
 	}
 
 	@Override
-	public boolean onPlacement(Block block, short data, BlockFace against, boolean isClickedBlock) {
+	public boolean onPlacement(Block block, short data, BlockFace against, Vector3 clickedPos, boolean isClickedBlock) {
 		block.setMaterial(this, data);
 		return true;
+	}
+
+	@Override
+	public final boolean canPlace(Block block, short data) {
+		return this.canPlace(block, data, BlockFace.BOTTOM, Vector3.UNIT_Y, false);
+	}
+
+	@Override
+	public final boolean onPlacement(Block block, short data) {
+		return this.onPlacement(block, data, BlockFace.BOTTOM, Vector3.UNIT_Y, false);
 	}
 
 	/**
@@ -469,4 +500,5 @@ public class BlockMaterial extends Material implements Placeable {
 	public boolean isCompatibleWith(BlockMaterial m) {
 		return (m.getId() == getId() && ((m.getData() ^ getData()) & getDataMask()) == 0);
 	}
+
 }

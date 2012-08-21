@@ -29,11 +29,14 @@ package org.spout.api.protocol;
 import java.io.Serializable;
 import java.net.InetSocketAddress;
 
-import org.jboss.netty.channel.Channel;
 import org.spout.api.Engine;
 import org.spout.api.map.DefaultedMap;
 import org.spout.api.player.Player;
 
+/**
+ * Represents a connection to the server.<br/>
+ * Controls the state, protocol and channels of a connection to the server.
+ */
 public interface Session {
 	/**
 	 * Passes a message to a session for processing.
@@ -49,16 +52,9 @@ public interface Session {
 	public void dispose();
 
 	/**
-	 * Sets the protocol associated with this session.
-	 *
-	 * @param protocol the protocol (Bootstrap until set)
-	 */
-	public void setProtocol(Protocol protocol);
-
-	/**
 	 * Gets the protocol associated with this session.
 	 *
-	 * @return the protocol (Bootstrap until set)
+	 * @return the protocol
 	 */
 	public Protocol getProtocol();
 
@@ -89,6 +85,7 @@ public interface Session {
 	 * @param force if this message is used in the identification stages of communication
 	 * @param message The message.
 	 */
+	// FIXME the force boolean results in a difficult to read call, should be split into send and sendNow
 	public void send(boolean force, Message message);
 
 	/**
@@ -102,6 +99,7 @@ public interface Session {
 	 * @param force if the messages are used in the identification stages of communication
 	 * @param messages the messages to send to the client
 	 */
+	// FIXME the force boolean results in a difficult to read call, should be split into send and sendAllNow
 	public void sendAll(boolean force, Message... messages);
 	/**
 	 * Disconnects the player as a kick. This is equivalent to calling disconnect(reason, true)
@@ -120,6 +118,7 @@ public interface Session {
 	 * @return Whether the player was actually disconnected. This can be false if the kick event is cancelled or errors occur
 	 */
 	public boolean disconnect(Boolean kick, Object... reason);
+	
 	/**
 	 * Returns the address of this session.
 	 *
@@ -133,6 +132,13 @@ public interface Session {
 	 * @return session id
 	 */
 	public String getSessionId();
+
+	/**
+	 * Checks if this session has a player connected to it.
+	 * 
+	 * @return true if this session has a player.
+	 */
+	public boolean hasPlayer();
 
 	/**
 	 * Gets the player associated with this session.

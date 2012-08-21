@@ -26,18 +26,16 @@
  */
 package org.spout.api;
 
-import java.net.SocketAddress;
 import java.util.Collection;
+import java.util.List;
 
-import org.jboss.netty.channel.Channel;
-
-import org.spout.api.protocol.Session;
-import org.spout.api.protocol.bootstrap.BootstrapProtocol;
+import org.spout.api.protocol.PortBinding;
 
 /**
  * Represents the server-specific implementation of Minecraft.
  */
 public interface Server extends Engine {
+
 	/**
 	 * Returns true if this server is using a whitelist.
 	 *
@@ -77,7 +75,7 @@ public interface Server extends Engine {
 	 *
 	 * @param player to remove from whitelist
 	 */
-	public void unWhitelist(String player);
+	public void removeFromWhitelist(String player);
 
 	/**
 	 * True if this server does not check if players are flying or not.
@@ -90,41 +88,48 @@ public interface Server extends Engine {
 	public boolean allowFlight();
 
 	/**
+	 * Returns all IP addresses being listened to.
+	 * The returned collection is unmodifiable.
+	 *
+	 * @return address
+	 */
+	public List<PortBinding> getBoundAddresses();
+
+	/**
 	 * Binds the server to a certain address
 	 *
-	 * @param address The address to bind to.
-	 * @param bootstrapProtocol The bootstrap protocol to use for connections to
-	 *            this binding
+	 * @param binding The address and protocol to bind to.
 	 * @return true if successful
 	 */
-	public boolean bind(SocketAddress address, BootstrapProtocol bootstrapProtocol);
+	public boolean bind(PortBinding binding);
+
 	/**
 	 * Bans the specified player
 	 *
-	 * @param Player to ban
+	 * @param player Player to ban
 	 */
 	public void banPlayer(String player);
 
 	/**
 	 * Unbans the specified player
 	 *
-	 * @param Player to ban
+	 * @param player Player to ban
 	 */
 	public void unbanPlayer(String player);
 
 	/**
 	 * Bans the specified IP
 	 *
-	 * @param Player to ban
+	 * @param address Player to ban
 	 */
-	public void banIp(String address);
+	public void banIP(String address);
 
 	/**
 	 * Unbans the specified IP
 	 *
-	 * @param Player to ban
+	 * @param address Player to ban
 	 */
-	public void unbanIp(String address);
+	public void unbanIP(String address);
 
 	/**
 	 * Gets a collection of all banned IP's, in string format.
@@ -143,8 +148,8 @@ public interface Server extends Engine {
 	/**
 	 * Returns true if the player or address is banned.
 	 *
-	 * @param Player name to check
-	 * @param Address to check
+	 * @param player Player name to check
+	 * @param address Address to check
 	 * @return If either is banned
 	 */
 	public boolean isBanned(String player, String address);
@@ -152,15 +157,15 @@ public interface Server extends Engine {
 	/**
 	 * Returns true if the address is banned.
 	 *
-	 * @param Address to check
+	 * @param address Address to check
 	 * @return If the address is banned
 	 */
-	public boolean isIpBanned(String address);
+	public boolean isIPBanned(String address);
 
 	/**
 	 * Returns true if the player is banned.
 	 *
-	 * @param Player name to check
+	 * @param player Player name to check
 	 * @return If the player is banned
 	 */
 	public boolean isPlayerBanned(String player);
@@ -177,13 +182,56 @@ public interface Server extends Engine {
 	 *
 	 * @return the ban message
 	 */
-	public String getIpBanMessage(String address);
+	public String getIPBanMessage(String address);
 
 	/**
-	 * Creates a new Session
+	 * Maps a port for both TCP and UDP communication for Universal Plug and Play enabled InternetGatewayDevices
 	 *
-	 * @param channel the associated channel
+	 * @param port the port to be mapped
 	 * @return the session
 	 */
-	public Session newSession(Channel channel);
+	public void mapUPnPPort(int port);
+
+	/**
+	 * Maps a port for both TCP and UDP communication for Universal Plug and Play enabled InternetGatewayDevices
+	 *
+	 * @param port the port to be mapped
+	 * @param description the description for this mapping
+	 * @return the session
+	 */
+	public void mapUPnPPort(int port, String description);
+
+	/**
+	 * Maps a port for TCP communication for Universal Plug and Play enabled InternetGatewayDevices
+	 *
+	 * @param port the port to be mapped
+	 * @return the session
+	 */
+	public void mapTCPPort(int port);
+
+	/**
+	 * Maps a port for TCP communication for Universal Plug and Play enabled InternetGatewayDevices
+	 *
+	 * @param port the port to be mapped
+	 * @param description the description for this mapping
+	 * @return the session
+	 */
+	public void mapTCPPort(int port, String description);
+
+	/**
+	 * Maps a port for TCP communication for Universal Plug and Play enabled InternetGatewayDevices
+	 *
+	 * @param port the port to be mapped
+	 * @return the session
+	 */
+	public void mapUDPPort(int port);
+
+	/**
+	 * Maps a port for TCP communication for Universal Plug and Play enabled InternetGatewayDevices
+	 *
+	 * @param port the port to be mapped
+	 * @param description the description for this mapping
+	 * @return the session
+	 */
+	public void mapUDPPort(int port, String description);
 }

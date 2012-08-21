@@ -50,6 +50,19 @@ public interface AreaBlockAccess extends AreaBlockSource {
 	public boolean setBlockData(int x, int y, int z, short data, Source source);
 
 	/**
+	 * Adds a value to the data for the block at (x, y, z)
+	 *
+	 * @param x coordinate of the block
+	 * @param y coordinate of the block
+	 * @param z coordinate of the block
+	 * @param data to add
+	 * @param source of the change
+	 * @throws NullPointerException
+	 */
+	@LiveWrite
+	public boolean addBlockData(int x, int y, int z, short data, Source source);
+
+	/**
 	 * Sets the material and data for the block at (x, y, z) to the given material and data.
 	 *
 	 * @param x coordinate of the block
@@ -184,9 +197,9 @@ public interface AreaBlockAccess extends AreaBlockSource {
 	 */
 	@Threadsafe
 	public boolean isBlockDataBitSet(int x, int y, int z, int bits);
-	
+
 	/**
-	 * Sets the data field from the block at (x, y, z).  This is the reverse operation to the getBlockDataField method.<br>
+	 * Sets the data field for the block at (x, y, z).  This is the reverse operation to the getBlockDataField method.<br>
 	 * <br>
 	 * newData = ((value << shift) & bits) | (oldData & (~bits))<br>
 	 * <br>
@@ -204,6 +217,24 @@ public interface AreaBlockAccess extends AreaBlockSource {
 	public int setBlockDataField(int x, int y, int z, int bits, int value, Source source);
 
 	/**
+	 * Adds a value to the data field for the block at (x, y, z).  This is the reverse operation to the getBlockDataField method.<br>
+	 * <br>
+	 * newData = (((oldData + (value << shift)) & bits) | (oldData & ~bits))<br>
+	 * <br>
+	 * The shift value used shifts the least significant non-zero bit of bits to the LSB position
+	 * 
+	 * @param x coordinate of the block
+	 * @param y coordinate of the block
+	 * @param z coordinate of the block
+	 * @param bits the bits of the field
+	 * @param value to add to the value of the field
+	 * @return the old value of the field
+	 */
+	@LiveWrite
+	@Threadsafe
+	public int addBlockDataField(int x, int y, int z, int bits, int value, Source source);
+
+	/**
 	 * Gets if a block is contained in this area
 	 * @param x coordinate of the block
 	 * @param y coordinate of the block
@@ -212,17 +243,6 @@ public interface AreaBlockAccess extends AreaBlockSource {
 	 */
 	public boolean containsBlock(int x, int y, int z);
 
-	/**
-	 * Gets a {@link Block} representing the block at (x, y, z)
-	 * @param x coordinate of the block
-	 * @param y coordinate of the block
-	 * @param z coordinate of the block
-	 * 
-	 * @return the Block
-	 */
-	@Threadsafe
-	public Block getBlock(int x, int y, int z);
-	
 	/**
 	 * Gets a {@link Block} representing the block at (x, y, z)
 	 * @param x coordinate of the block
@@ -240,17 +260,6 @@ public interface AreaBlockAccess extends AreaBlockSource {
 	 * @param x coordinate of the block
 	 * @param y coordinate of the block
 	 * @param z coordinate of the block
-	 * 
-	 * @return the Block
-	 */
-	@Threadsafe
-	public Block getBlock(float x, float y, float z);
-
-	/**
-	 * Gets a {@link Block} representing the block at (x, y, z)
-	 * @param x coordinate of the block
-	 * @param y coordinate of the block
-	 * @param z coordinate of the block
 	 * @param source the block should represent
 	 * 
 	 * @return the Block
@@ -261,20 +270,10 @@ public interface AreaBlockAccess extends AreaBlockSource {
 	/**
 	 * Gets a {@link Block} representing the block at the position given
 	 * @param position of the block
-	 * 
-	 * @return the Block
-	 */
-	@Threadsafe
-	public Block getBlock(Vector3 position);
-
-	/**
-	 * Gets a {@link Block} representing the block at the position given
-	 * @param position of the block
 	 * @param source the block should represent
 	 * 
 	 * @return the Block
 	 */
 	@Threadsafe
 	public Block getBlock(Vector3 position, Source source);
-
 }

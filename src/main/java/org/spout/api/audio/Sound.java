@@ -24,48 +24,57 @@
  * License and see <http://www.spout.org/SpoutDevLicenseV1.txt> for the full license,
  * including the MIT license.
  */
-package org.spout.api.material.source;
+package org.spout.api.audio;
 
-import org.spout.api.material.Material;
-import org.spout.api.util.LogicUtil;
+import org.spout.api.resource.Resource;
 
-public class GenericMaterialData implements MaterialData {
-	private final Material material;
-	private short data;
+/**
+ * Represents a sound.
+ */
+public abstract class Sound extends Resource {
+	/**
+	 * Gets the sampling rate (sampling frequency) of the sound.
+	 * 
+	 * @return
+	 */
+	public abstract int getSamplingRate();
 
-	public GenericMaterialData(Material material, short data) {
-		this.material = material;
-		this.data = data;
+	/**
+	 * Gets the bit depth of the buffer.
+	 * 
+	 * @return
+	 */
+	public abstract int getBitDepth();
+
+	/**
+	 * Gets the number of channels of the sound.
+	 * 
+	 * @return
+	 */
+	public abstract int getChannels();
+
+	/**
+	 * Gets the size of the buffer.
+	 * 
+	 * @return
+	 */
+	public abstract int getBufferSize();
+
+	/**
+	 * Gets the bit rate of the sample in bits per second.
+	 * 
+	 * @return
+	 */
+	public int getBitRate() {
+		return getSamplingRate() * getBitDepth() * getChannels();
 	}
 
-	@Override
-	public Material getMaterial() {
-		return this.material;
-	}
-
-	@Override
-	public short getData() {
-		return this.data;
-	}
-
-	@Override
-	public GenericMaterialData setData(int data) {
-		this.data = (short) data;
-		return this;
-	}
-
-	@Override
-	public GenericMaterialData setData(DataSource datasource) {
-		return this.setData(datasource.getData());
-	}
-
-	@Override
-	public Material getSubMaterial() {
-		return this.getMaterial().getSubMaterial(this.getData());
-	}
-
-	@Override
-	public boolean isMaterial(Material... materials) {
-		return LogicUtil.equalsAny(this.material, materials);
+	/**
+	 * Returns the length of the sound sample in seconds.
+	 * 
+	 * @return
+	 */
+	public float getLength() {
+		return getBufferSize() / (float) (getBitRate() / 8);
 	}
 }

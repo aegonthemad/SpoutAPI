@@ -26,16 +26,16 @@
  */
 package org.spout.api.render;
 
-import org.spout.api.entity.EntityComponent;
+import org.spout.api.entity.component.BasicEntityComponent;
 import org.spout.api.math.MathHelper;
 import org.spout.api.math.Matrix;
 
-public class CameraComponent extends EntityComponent implements Camera {
+public class CameraComponent extends BasicEntityComponent implements Camera {
 
 	Matrix projection;
 	Matrix view;
-	
-	
+	private ViewFrustum frustum = new ViewFrustum();
+
 	@Override
 	public Matrix getProjection() {
 		return projection;
@@ -49,21 +49,26 @@ public class CameraComponent extends EntityComponent implements Camera {
 	@Override
 	public void updateView() {
 		view = MathHelper.rotate(getParent().getRotation()).multiply(MathHelper.translate(getParent().getPosition()));
-		
+
 	}
 
 	@Override
 	public void onTick(float dt) {
 		updateView();
-		
+		frustum.update(projection, view);
 	}
 
 	@Override
 	public void onAttached() {
 		// TODO Get FOV
-		projection = MathHelper.createPerspective(90f, 4.0f/3.0f, .001f, 1000f);
+		projection = MathHelper.createPerspective(90f, 4.0f / 3.0f, .001f, 1000f);
 		updateView();
-		
+		frustum.update(projection, view);
+	}
+
+	@Override
+	public ViewFrustum getFrustum() {
+		return frustum;
 	}
 
 }

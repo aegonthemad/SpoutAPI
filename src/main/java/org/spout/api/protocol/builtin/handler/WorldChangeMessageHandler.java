@@ -26,18 +26,14 @@
  */
 package org.spout.api.protocol.builtin.handler;
 
-import java.util.UUID;
-
-import org.spout.api.player.Player;
-import org.spout.api.protocol.MessageHandler;
+import org.spout.api.Client;
+import org.spout.api.protocol.ClientMessageHandler;
 import org.spout.api.protocol.Session;
 import org.spout.api.protocol.builtin.message.WorldChangeMessage;
 
-public class WorldChangeMessageHandler extends MessageHandler<WorldChangeMessage> {
+public class WorldChangeMessageHandler implements ClientMessageHandler<WorldChangeMessage> {
 	@Override
-	public void handleClient(Session session, Player player, WorldChangeMessage message) {
-		UUID worldUUID = message.getWorldUUID();
-		// TODO: Create a world with worldUUID, set player's world to woldUUID and make the world's DatatableMap accessible
-		//player.getEntity().getWorld().getDataMap().decompress(message.getCompressedData());
+	public void handle(Session session, WorldChangeMessage message) {
+		((Client) session.getEngine()).worldChanged(message.getWorldName(), message.getWorldUUID(), message.getCompressedData());
 	}
 }

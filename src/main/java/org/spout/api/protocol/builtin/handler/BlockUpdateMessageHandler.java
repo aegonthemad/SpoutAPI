@@ -28,17 +28,22 @@ package org.spout.api.protocol.builtin.handler;
 
 import org.spout.api.material.Material;
 import org.spout.api.player.Player;
-import org.spout.api.protocol.MessageHandler;
+import org.spout.api.protocol.ClientMessageHandler;
 import org.spout.api.protocol.Session;
 import org.spout.api.protocol.builtin.message.BlockUpdateMessage;
 
 /**
  *
  */
-public class BlockUpdateMessageHandler extends MessageHandler<BlockUpdateMessage> {
+public class BlockUpdateMessageHandler implements ClientMessageHandler<BlockUpdateMessage> {
 	@Override
-	public void handleClient(Session session, Player player, BlockUpdateMessage message) {
-		player.getEntity().getWorld().getBlock(message.getX(), message.getY(), message.getZ())
+	public void handle(Session session, BlockUpdateMessage message) {
+		if(!session.hasPlayer()) {
+			return;
+		}
+
+		Player player = session.getPlayer();
+		player.getWorld().getBlock(message.getX(), message.getY(), message.getZ(), player)
 		.setMaterial(Material.get(message.getType()), message.getData())
 		.setBlockLight(message.getBlockLight()).setSkyLight(message.getSkyLight());
 	}

@@ -26,73 +26,96 @@
  */
 package org.spout.api.player;
 
-import org.spout.api.math.MathHelper;
-
 /**
  *  Represents the current player input state
  *
  */
 public class PlayerInputState {
+	public static final int FORWARD = 0x01;
+	public static final int BACKWARD = 0x02;
+	public static final int LEFT = 0x04;
+	public static final int RIGHT  = 0x08;
+	public static final int JUMP = 0x10;
+	public static final int CROUCH = 0x20;
+	public static final int SELECTUP = 0x40;
+	public static final int SELECTDOWN = 0x80;
+	public static final int FIRE1 = 0x0100;
+	public static final int FIRE2 = 0x0200;
+	public static final int INTERACT = 0400;
 	
-	static final int NUM_AXIS = 6;
 	
-	static final float MAX_AXIS = 1.f;
-	static final float MIN_AXIS = -1.f;
+			
+	short userCommands = 0;
+	byte mouse_dx;
+	byte mouse_dy;
 	
 	
-	float[] axis = new float[NUM_AXIS];
-	/**
-	 * Gets the current depression of the forward buttons.
-	 * 1.0 reprensents full force forward
-	 * -1.0 represents full force backward
-	 * @return
-	 */
-	public float getForward() {
-		return axis[0];
+	public PlayerInputState(boolean forward, boolean backward, boolean left, boolean right, boolean jump, boolean crouch, boolean selectUp, boolean selectDown, boolean fire1, boolean fire2, boolean interact, byte mdx, byte mdy){
+		userCommands = 0;
+		userCommands |= (forward ? FORWARD : 0);
+		userCommands |= (backward? BACKWARD : 0);
+		userCommands |= (left ? LEFT : 0);
+		userCommands |= (right ? RIGHT : 0);
+		userCommands |= (jump ? JUMP : 0);
+		userCommands |= (crouch ? CROUCH : 0);
+		userCommands |= (selectUp ? SELECTUP : 0);
+		userCommands |= (selectDown ? SELECTDOWN : 0);
+		userCommands |= (fire1 ? FIRE1 : 0);
+		userCommands |= (fire2 ? FIRE2 : 0);
+		userCommands |= (interact ? INTERACT : 0);
+		mouse_dx = mdx;
+		mouse_dy = mdy;
+		
 	}
 	
-	public float getHorizantal() {
-		return axis[1];
-	}
-	
-	public float getJump() {
-		return axis[2];
-	}
-	
-	public float getLookX() {
-		return axis[3];
-	}
-	
-	public float getLookY() {
-		return axis[4];
-	}
-	
-	public float getSprint() {
-		return axis[5];
-	}
-	
-	public void setForward(float value) {
-		axis[0] = (float)MathHelper.clamp(value, MAX_AXIS, MIN_AXIS);
-	}
-	
-	public void setHorizantal(float value) {
-		axis[1] = (float)MathHelper.clamp(value, MAX_AXIS, MIN_AXIS);
-	}
-	
-	public void setJump(float value) {
-		axis[2] = (float)MathHelper.clamp(value, MAX_AXIS, MIN_AXIS);
-	}
-	
-	public void setLookX(float value) {
-		axis[3] = (float)MathHelper.clamp(value, MAX_AXIS, MIN_AXIS);
-	}
-	
-	public void setLookY(float value) {
-		axis[4] = (float)MathHelper.clamp(value, MAX_AXIS, MIN_AXIS);
-	}
-	
-	public void setSprint(float value) {
-		axis[5] = (float)MathHelper.clamp(value, MAX_AXIS, MIN_AXIS);
+	public PlayerInputState(short userCommands, byte mdx, byte mdy){
+		this.userCommands = userCommands;
+		this.mouse_dx = mdx;
+		this.mouse_dy = mdy;
 	}
 
+	public boolean getForward() {
+		return (userCommands & FORWARD) == 1;
+	}
+	
+	public boolean getBackward() {
+		return (userCommands & BACKWARD) == 1;		
+	}
+	
+	public boolean getRight() {
+		return (userCommands & RIGHT) == 1;		
+	}
+	
+	public boolean getLeft() {
+		return (userCommands & LEFT) == 1;		
+	}
+	
+	public boolean getJump() {
+		return (userCommands & JUMP) == 1;		
+	}
+	
+	public boolean getCrouch() {
+		return (userCommands & CROUCH) == 1;		
+	}
+	
+	public boolean getSelectUp() {
+		return (userCommands & SELECTUP) == 1;		
+	}
+	
+	public boolean getSelectDown() {
+		return (userCommands & SELECTDOWN) == 1;		
+	}
+	
+	public boolean getFire1() {
+		return (userCommands & FIRE1) == 1;		
+	}
+	
+	public boolean getFire2() {
+		return (userCommands & FIRE2) == 1;		
+	}
+	
+	public boolean getInteract() {
+		return (userCommands & INTERACT) == 1;		
+	}
+	
 }

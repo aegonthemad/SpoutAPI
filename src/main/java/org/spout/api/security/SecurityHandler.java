@@ -64,7 +64,7 @@ import org.spout.api.Spout;
 public class SecurityHandler {
 	
 	public static final boolean DECRYPT_MODE = false;
-	public static final boolean ENCRYPT_MODE = false;
+	public static final boolean ENCRYPT_MODE = true;
 	
 
 	private static final ConcurrentHashMap<String, AsymmetricCipherKeyPair > serverKeys = new ConcurrentHashMap<String, AsymmetricCipherKeyPair >();
@@ -214,7 +214,7 @@ public class SecurityHandler {
 		return getKeyPair(keySize, algorithm, "SHA1PRNG", "SUN");
 	}
 
-	public AsymmetricCipherKeyPair  getKeyPair(int keySize, String algorithm, String RNGAlgorithm, String RNGProvider) {
+	public AsymmetricCipherKeyPair  getKeyPair(int keySize, String algorithm, String rngAlgorithm, String rngProvider) {
 		AsymmetricCipherKeyPair pair = serverKeys.get(algorithm);
 		if (pair != null) {
 			return pair;
@@ -226,7 +226,7 @@ public class SecurityHandler {
 
 		SecureRandom secureRandom;
 		try {
-			secureRandom = SecureRandom.getInstance(RNGAlgorithm, RNGProvider);
+			secureRandom = SecureRandom.getInstance(rngAlgorithm, rngProvider);
 		} catch (NoSuchProviderException e) {
 			Spout.getLogger().info("Unable to find algorithm to for random number generator");
 			return null;

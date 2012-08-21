@@ -28,12 +28,14 @@ package org.spout.api.protocol;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.spout.api.Spout;
 import org.spout.api.entity.Entity;
@@ -43,7 +45,6 @@ import org.spout.api.geo.LoadOption;
 import org.spout.api.geo.World;
 import org.spout.api.geo.cuboid.Chunk;
 import org.spout.api.geo.discrete.Point;
-import org.spout.api.inventory.InventoryViewer;
 import org.spout.api.material.BlockMaterial;
 import org.spout.api.math.IntVector3;
 import org.spout.api.math.Quaternion;
@@ -54,10 +55,11 @@ import org.spout.api.protocol.event.ProtocolEventListener;
 import org.spout.api.scheduler.TickStage;
 import org.spout.api.util.OutwardIterator;
 
-public abstract class NetworkSynchronizer implements InventoryViewer {
+public abstract class NetworkSynchronizer {
 	protected final Player owner;
 	protected Entity entity;
 	protected final Session session;
+	protected final AtomicReference<Protocol> protocol = new AtomicReference<Protocol>(null);
 
 	public NetworkSynchronizer(Player owner, Session session, Entity entity, int minimumViewRadius) {
 		this.owner = owner;
@@ -100,6 +102,12 @@ public abstract class NetworkSynchronizer implements InventoryViewer {
 	private final Set<Point> chunksToObserve = new LinkedHashSet<Point>();
 	private final Map<Class<? extends ProtocolEvent>, ProtocolEventExecutor> protocolEventMapping = new HashMap<Class<? extends ProtocolEvent>, ProtocolEventExecutor>();
 
+	public void setRespawned() {
+		first = true;
+		worldChanged = true;
+		teleported = true;
+	}
+
 	public void setPositionDirty() {
 		teleported = true;
 	}
@@ -116,13 +124,22 @@ public abstract class NetworkSynchronizer implements InventoryViewer {
 		for (final Method method : listener.getClass().getDeclaredMethods()) {
 			if (method.isAnnotationPresent(EventHandler.class) && method.getParameterTypes().length == 1) {
 				Class<?> clazz = method.getParameterTypes()[0];
-				if (!ProtocolEvent.class.isAssignableFrom(ProtocolEvent.class)) {
+				if (!ProtocolEvent.class.isAssignableFrom(clazz)) {
 					session.getEngine().getLogger().warning("Invalid protocol event handler attempted to be registered for " + owner.getName());
 					continue;
 				}
 
-				if (!Message.class.isAssignableFrom(method.getReturnType()) && !Message.class.isAssignableFrom(method.getReturnType().getComponentType())) {
+				Class<?> returnType = method.getReturnType();
+				if (returnType == null || returnType.equals(void.class)) {
 					session.getEngine().getLogger().warning("Protocol event handler not returning a Message tried to be registered for " + owner.getName());
+					session.getEngine().getLogger().warning("Please change the return type from 'void' to Message");
+					continue;
+				} else if (!Message.class.isAssignableFrom(returnType)) {
+					Class<?> compType = returnType.getComponentType();
+					if (compType == null || !Message.class.isAssignableFrom(compType)) {
+						session.getEngine().getLogger().warning("Protocol event handler not returning a Message tried to be registered for " + owner.getName());
+						continue;
+					}
 				}
 
 				method.setAccessible(true);
@@ -131,8 +148,10 @@ public abstract class NetworkSynchronizer implements InventoryViewer {
 					public Message[] execute(ProtocolEvent event) throws EventException {
 						try {
 							Object obj = method.invoke(listener, event);
-							if (obj.getClass().isArray()) {
-								return (Message[])obj;
+							if (obj == null) {
+								return null;
+							} else if (obj.getClass().isArray()) {
+								return (Message[]) obj;
 							} else if (Message.class.isAssignableFrom(obj.getClass())) {
 								return new Message[] {(Message) obj};
 							}
@@ -193,9 +212,13 @@ public abstract class NetworkSynchronizer implements InventoryViewer {
 		// TODO teleport smoothing
 		Point currentPosition = entity.getPosition();
 		if (currentPosition != null) {
-			if (currentPosition.getManhattanDistance(lastChunkCheck) > Chunk.BLOCKS.SIZE >> 1) {
+			if (worldChanged || 
+					(!currentPosition.equals(lastChunkCheck) &&
+					currentPosition.getManhattanDistance(lastChunkCheck) > Chunk.BLOCKS.SIZE >> 1))
+			{
 				checkChunkUpdates(currentPosition);
 				lastChunkCheck = currentPosition;
+				worldChanged = false;
 			}
 
 			if (first || lastPosition == null || lastPosition.getWorld() != currentPosition.getWorld()) {
@@ -211,21 +234,25 @@ public abstract class NetworkSynchronizer implements InventoryViewer {
 			holdingPosition = currentPosition;
 		}
 
-		for (Point p : chunkFreeQueue) {
-			if (initializedChunks.contains(p)) {
-				removeObserver(p);
+		if (!worldChanged) {
+			for (Point p : chunkFreeQueue) {
+				if (initializedChunks.contains(p)) {
+					removeObserver(p);
+				}
 			}
-		}
 
-		for (Point p : chunkInitQueue) {
-			if (!initializedChunks.contains(p)) {
-				addObserver(p);
+			for (Point p : chunkInitQueue) {
+				if (!initializedChunks.contains(p)) {
+					addObserver(p);
+				}
 			}
-		}
 
-		checkObserverUpdateQueue();
+			checkObserverUpdateQueue();
+		}
 
 	}
+	
+	private int chunksSent = 0;
 
 	public void preSnapshot() {
 
@@ -235,68 +262,81 @@ public abstract class NetworkSynchronizer implements InventoryViewer {
 				freeChunk(p);
 			}
 		} else {
-
-			for (Point p : chunkFreeQueue) {
-				if (initializedChunks.remove(p)) {
-					freeChunk(p);
-					activeChunks.remove(p);
-				}
-			}
-
-			chunkFreeQueue.clear();
-
-			int chunksSent = 0;
-
-			for (Point p : chunkInitQueue) {
-				if (initializedChunks.add(p)) {
-					initChunk(p);
-				}
-			}
-
-			chunkInitQueue.clear();
-
-			Iterator<Point> i;
-
-			i = priorityChunkSendQueue.iterator();
-			while (i.hasNext()) {
-				Point p = i.next();
-				Chunk c = p.getWorld().getChunkFromBlock(p);
-				if (c.canSend()) {
-					sendChunk(c);
-					activeChunks.add(p);
-					i.remove();
-					chunksSent++;
-				}
-			}
-
-			if (priorityChunkSendQueue.isEmpty() && teleported && entity != null) {
+			if (worldChanged && entity != null) {
+				first = false;
 				Point ep = entity.getPosition();
 				if (worldChanged) {
 					worldChanged(ep.getWorld());
-					worldChanged = false;
 				}
-				sendPosition(entity.getPosition(), entity.getRotation());
-				first = false;
-				teleported = false;
-			}
-
-			boolean tickTimeRemaining = Spout.getScheduler().getRemainingTickTime() > 0;
-
-			i = chunkSendQueue.iterator();
-			while (i.hasNext() && chunksSent < CHUNKS_PER_TICK && tickTimeRemaining) {
-				Point p = i.next();
-				Chunk c = p.getWorld().getChunkFromBlock(p);
-				if (c.canSend()) {
-					sendChunk(c);
-					activeChunks.add(p);
-					i.remove();
-					chunksSent++;
+			} else if (!worldChanged) {
+				for (Point p : chunkFreeQueue) {
+					if (initializedChunks.remove(p)) {
+						freeChunk(p);
+						activeChunks.remove(p);
+					}
 				}
-				tickTimeRemaining = Spout.getScheduler().getRemainingTickTime() > 0;
-			}
 
+				chunkFreeQueue.clear();
+
+				chunksSent = 0;
+
+				for (Point p : chunkInitQueue) {
+					if (initializedChunks.add(p)) {
+						initChunk(p);
+					}
+				}
+
+				chunkInitQueue.clear();
+
+				Iterator<Point> i;
+
+				i = priorityChunkSendQueue.iterator();
+				while (i.hasNext()) {
+					Point p = i.next();
+					Chunk c = p.getWorld().getChunkFromBlock(p);
+					i = attemptSendChunk(i, priorityChunkSendQueue, c);
+				}
+
+				if (priorityChunkSendQueue.isEmpty() && teleported && entity != null) {
+					sendPosition(entity.getPosition(), entity.getRotation());
+					teleported = false;
+				}
+
+				boolean tickTimeRemaining = Spout.getScheduler().getRemainingTickTime() > 0;
+
+				i = chunkSendQueue.iterator();
+				while (i.hasNext() && chunksSent < CHUNKS_PER_TICK && tickTimeRemaining) {
+					Point p = i.next();
+					Chunk c = p.getWorld().getChunkFromBlock(p);
+					i = attemptSendChunk(i, chunkSendQueue, c);
+					tickTimeRemaining = Spout.getScheduler().getRemainingTickTime() > 0;
+				}
+			}
 		}
 
+	}
+	
+	private Iterator<Point> attemptSendChunk(Iterator<Point> i, Iterable<Point> queue, Chunk c) {
+		if (c.canSend()) {
+			Collection<Chunk> sent = sendChunk(c);
+			activeChunks.add(c.getBase());
+			i.remove();
+			if (sent != null) {
+				boolean updated = false;
+				for (Chunk s : sent) {
+					Point base = s.getBase();
+					if (priorityChunkSendQueue.remove(base) || chunkSendQueue.remove(base)) {
+						updated = true;
+						activeChunks.add(base);
+					}
+				}
+				if (updated) {
+					i = queue.iterator();
+				}
+			}
+			chunksSent++;
+		}
+		return i;
 	}
 
 	private void checkObserverUpdateQueue() {
@@ -326,7 +366,7 @@ public abstract class NetworkSynchronizer implements InventoryViewer {
 
 	private void addObserver(Chunk c) {
 		observed.add(c);
-		c.refreshObserver(owner.getEntity());
+		c.refreshObserver(owner);
 	}
 
 	private void removeObserver(Point p) {
@@ -339,7 +379,7 @@ public abstract class NetworkSynchronizer implements InventoryViewer {
 
 	private void removeObserver(Chunk c) {
 		observed.remove(c);
-		c.removeObserver(owner.getEntity());
+		c.removeObserver(owner);
 	}
 
 	private void checkChunkUpdates(Point currentPosition) {
@@ -426,9 +466,10 @@ public abstract class NetworkSynchronizer implements InventoryViewer {
 	 * multiple threads
 	 *
 	 * @param c the chunk
+	 * @return the chunks that were sent, or null if only the given chunk was sent
 	 */
-	public void sendChunk(Chunk c) {
-		//TODO: Implement Spout Protocol
+	public Collection<Chunk> sendChunk(Chunk c) {
+		return null;
 	}
 
 	/**
@@ -547,4 +588,16 @@ public abstract class NetworkSynchronizer implements InventoryViewer {
 	public void syncEntity(Entity e) {
 	}
 
+	/**
+	 * Sets the protocol associated with this network synchronizer
+	 *
+	 * @param protocol
+	 */
+	public void setProtocol(Protocol protocol) {
+		if (protocol == null) {
+			throw new IllegalArgumentException("Protocol may not be null");
+		} else if (!this.protocol.compareAndSet(null, protocol)) {
+			throw new IllegalStateException("Protocol may not be set twice for a network synchronizer");
+		}
+	}
 }

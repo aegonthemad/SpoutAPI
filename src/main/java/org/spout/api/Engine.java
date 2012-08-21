@@ -34,10 +34,12 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Logger;
 
+import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.group.ChannelGroup;
 
 import org.spout.api.command.Command;
 import org.spout.api.command.CommandSource;
+import org.spout.api.command.RootCommand;
 import org.spout.api.entity.Entity;
 import org.spout.api.event.EventManager;
 import org.spout.api.generator.WorldGenerator;
@@ -48,8 +50,9 @@ import org.spout.api.player.Player;
 import org.spout.api.plugin.Platform;
 import org.spout.api.plugin.PluginManager;
 import org.spout.api.plugin.ServiceManager;
+import org.spout.api.protocol.Protocol;
+import org.spout.api.protocol.Session;
 import org.spout.api.protocol.SessionRegistry;
-import org.spout.api.protocol.bootstrap.BootstrapProtocol;
 import org.spout.api.scheduler.Scheduler;
 import org.spout.api.scheduler.TaskManager;
 import org.spout.api.util.Named;
@@ -101,38 +104,6 @@ public interface Engine extends Named {
 	 * @return max players
 	 */
 	public int getMaxPlayers();
-
-	/**
-	 * Returns the current IP address.
-	 *
-	 * If this game is a server, this is the address being listened on.
-	 *
-	 * If this game is a client, and connected to a server, this is the address
-	 * connected to.
-	 *
-	 * If neither, this is null.
-	 *
-	 * Address may be in "x.x.x.x:port", "x.x.x.x", or null format.
-	 *
-	 * @return address
-	 */
-	public String getAddress();
-
-	/**
-	 * Returns all IP addresses in use.
-	 *
-	 * If this game is a server, this is the addresses being listened on.
-	 *
-	 * If this game is a client, and connected to a server, this is the address
-	 * connected to.
-	 *
-	 * If neither, this is null.
-	 *
-	 * Address may be in "x.x.x.x:port", "x.x.x.x", or null format.
-	 *
-	 * @return address
-	 */
-	public String[] getAllAddresses();
 
 	/**
 	 * Broadcasts the given message to all players
@@ -194,16 +165,6 @@ public interface Engine extends Named {
 	public Logger getLogger();
 
 	/**
-	 * Sends a command from the given command source. The command will be
-	 * handled as if the sender has sent it itself.
-	 *
-	 * @param source that is responsible for the command
-	 * @param commandLine text
-	 * @return true if dispatched
-	 */
-	public void processCommand(CommandSource source, String commandLine);
-
-	/**
 	 * Gets the update folder. The update folder is used to safely update
 	 * plugins at the right moment on a plugin load.
 	 *
@@ -226,6 +187,14 @@ public interface Engine extends Named {
 	 * @return {@link File} of the data folder.
 	 */
 	public File getDataFolder();
+
+	/**
+	 * Creates a new Session
+	 *
+	 * @param channel the associated channel
+	 * @return the session
+	 */
+	public Session newSession(Channel channel);
 
 	/**
 	 * Gets the {@link Entity} with the matching unique id
@@ -412,8 +381,10 @@ public interface Engine extends Named {
 	 * data is saved, and all threads are ended cleanly.<br/>
 	 * <br/>
 	 * Players will be sent a default disconnect message.
+	 * 
+	 * @return true for for the first stop
 	 */
-	public void stop();
+	public boolean stop();
 
 	/**
 	 * Ends this game instance safely. All worlds, players, and configuration
@@ -422,8 +393,9 @@ public interface Engine extends Named {
 	 * If any players are connected, will kick them with the given reason.
 	 *
 	 * @param reason for stopping the game instance
+	 * @return true for for the first stop
 	 */
-	public void stop(String reason);
+	public boolean stop(String reason);
 
 	/**
 	 * Gets the world folders which match the world name.
@@ -458,7 +430,7 @@ public interface Engine extends Named {
 	 *
 	 * @return the {@link Engine}'s root {@link Command}
 	 */
-	public Command getRootCommand();
+	public RootCommand getRootCommand();
 
 	/**
 	 * Returns the game's {@link EventManager} Event listener registration and
@@ -526,7 +498,7 @@ public interface Engine extends Named {
 	 * @param address The address
 	 * @return The protocol
 	 */
-	public BootstrapProtocol getBootstrapProtocol(SocketAddress address);
+	public Protocol getProtocol(SocketAddress address);
 
 	/**
 	 * Gets the service manager
@@ -586,13 +558,6 @@ public interface Engine extends Named {
 	 * @return the log filename
 	 */
 	public String getLogFile();
-
-	/**
-	 * Gets an array of available commands from the command map.
-	 *
-	 * @return An array of all command names currently registered on the server.
-	 */
-	public String[] getAllCommands();
 
 	/**
 	 * Gets an abstract representation of the engine Filesystem.

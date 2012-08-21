@@ -26,41 +26,84 @@
  */
 package org.spout.api.protocol.builtin;
 
-import org.spout.api.Client;
+import org.jboss.netty.buffer.ChannelBuffer;
+import org.jboss.netty.buffer.ChannelBuffers;
 import org.spout.api.Spout;
+import org.spout.api.chat.ChatArguments;
+import org.spout.api.command.Command;
 import org.spout.api.entity.component.controller.type.ControllerType;
 import org.spout.api.map.DefaultedKey;
 import org.spout.api.map.DefaultedKeyImpl;
+import org.spout.api.player.Player;
+import org.spout.api.protocol.HandlerLookupService;
 import org.spout.api.protocol.Message;
+import org.spout.api.protocol.MessageCodec;
 import org.spout.api.protocol.Protocol;
+import org.spout.api.protocol.Session;
 import org.spout.api.protocol.builtin.message.CommandMessage;
 import org.spout.api.protocol.builtin.message.LoginMessage;
+import org.spout.api.protocol.builtin.message.StringMapMessage;
+import org.spout.api.util.StringMap;
 
 /**
  * The protocol used in SpoutClient
  */
-public class SpoutProtocol extends Protocol {
+public abstract class SpoutProtocol extends Protocol {
 	public static final int ENTITY_PROTOCOL_ID = ControllerType.getProtocolId(SpoutProtocol.class.getName());
 	public static final DefaultedKey<Integer> PLAYER_ENTITY_ID = new DefaultedKeyImpl<Integer>("playerEntityId", -1);
 	public static final int PROTOCOL_VERSION = 0;
+	public static final int DEFAULT_PORT = 13756;
 
-	public SpoutProtocol() {
-		super("Spout", new SpoutCodecLookupService(), new SpoutHandlerLookupService());
+	protected SpoutProtocol(HandlerLookupService handlerLookupService) {
+		super("Spout", DEFAULT_PORT, new SpoutCodecLookupService(), handlerLookupService);
 	}
 
-	public Message getKickMessage(Object... message) {
-		return new CommandMessage("kick", message);
-	}
-
-	public Message getChatMessage(Object... message) {
-		if (Spout.getEngine() instanceof Client) {
-			return new CommandMessage("say", message);
+	public MessageCodec<?> readHeader(ChannelBuffer buf) {
+		int id = buf.readUnsignedShort();
+		int length = buf.readInt();
+		MessageCodec<?> codec = getCodecLookupService().find(id);
+		if (codec == null) {
+			buf.skipBytes(length);
+			return null;
 		} else {
-			return new CommandMessage("broadcast", message);
+			return codec;
 		}
+	}
+
+	public ChannelBuffer writeHeader(MessageCodec<?> codec, ChannelBuffer data) {
+		ChannelBuffer buf = ChannelBuffers.buffer(6);
+		buf.writeShort(codec.getOpcode());
+		buf.writeInt(data.writerIndex());
+		return buf;
+	}
+
+	public Message getKickMessage(ChatArguments message) {
+		Command cmd = Spout.getEngine().getRootCommand().getChild("disconnect");
+		if (cmd != null) {
+			return getCommandMessage(cmd, message);
+		} else {
+			return null;
+		}
+	}
+
+	public Message getCommandMessage(Command command, ChatArguments message) {
+		return new CommandMessage(command, message.getArguments());
 	}
 
 	public Message getIntroductionMessage(String playerName) {
 		return new LoginMessage(playerName, PROTOCOL_VERSION);
+	}
+
+	public void initializeSession(Session session) {
+		session.setNetworkSynchronizer(new SpoutNetworkSynchronizer(session));
+
+		session.send(false, new StringMapMessage(StringMapMessage.STRINGMAP_REGISTRATION_MAP, StringMapMessage.Action.SET, StringMap.get(StringMapMessage.STRINGMAP_REGISTRATION_MAP).getItems()));
+		for (StringMap map : StringMap.getAll()) {
+			session.send(false, new StringMapMessage(map.getId(), StringMapMessage.Action.SET, map.getItems()));
+		}
+	}
+
+	@Override
+	public void setPlayerController(Player player) {
 	}
 }

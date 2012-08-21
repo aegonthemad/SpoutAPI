@@ -26,14 +26,13 @@
  */
 package org.spout.api.protocol.builtin.handler;
 
-import org.spout.api.player.Player;
-import org.spout.api.protocol.MessageHandler;
+import org.spout.api.protocol.ServerMessageHandler;
 import org.spout.api.protocol.Session;
 import org.spout.api.protocol.builtin.message.ClickMessage;
 
-public class ClickMessageHandler extends MessageHandler<ClickMessage> {
+public class ClickMessageHandler implements ServerMessageHandler<ClickMessage> {
 	@Override
-	public void handleServer(Session session, Player player, ClickMessage message) {
+	public void handle(Session session, ClickMessage message) {
 
 	}
 }

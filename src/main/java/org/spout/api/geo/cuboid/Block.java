@@ -30,6 +30,7 @@ import org.spout.api.Source;
 import org.spout.api.entity.component.controller.BlockController;
 import org.spout.api.generator.biome.Biome;
 import org.spout.api.geo.World;
+import org.spout.api.geo.WorldSource;
 import org.spout.api.geo.discrete.Point;
 import org.spout.api.material.BlockMaterial;
 import org.spout.api.material.DynamicUpdateEntry;
@@ -37,13 +38,14 @@ import org.spout.api.material.block.BlockFace;
 import org.spout.api.material.range.EffectRange;
 import org.spout.api.material.source.DataSource;
 import org.spout.api.material.source.MaterialSource;
-import org.spout.api.material.source.MaterialState;
+import org.spout.api.material.source.MaterialAccess;
 import org.spout.api.math.IntVector3;
 import org.spout.api.math.Vector3;
+import org.spout.api.util.thread.DelayedWrite;
 import org.spout.api.util.thread.LiveWrite;
 import org.spout.api.util.thread.Threadsafe;
 
-public interface Block extends MaterialState {
+public interface Block extends MaterialAccess, WorldSource {
 
 	/**
 	 * Gets the {@link Point} position of this block in the world
@@ -71,6 +73,7 @@ public interface Block extends MaterialState {
 	 * 
 	 * @return the World
 	 */
+	@Override
 	public World getWorld();
 
 	/**
@@ -93,30 +96,6 @@ public interface Block extends MaterialState {
 	 * @return the z-coordinate
 	 */
 	public int getZ();
-
-	/**
-	 * Sets the x-coordinate of this block
-	 * 
-	 * @param x coordinate to set to
-	 * @return a new Block instance
-	 */
-	public Block setX(int x);
-
-	/**
-	 * Sets the y-coordinate of this block
-	 * 
-	 * @param y coordinate to set to
-	 * @return a new Block instance
-	 */
-	public Block setY(int y);
-
-	/**
-	 * Sets the z-coordinate of this block
-	 * 
-	 * @param z coordinate to set to
-	 * @return a new Block instance
-	 */
-	public Block setZ(int z);
 
 	/**
 	 * Translates this block using the offset and distance given
@@ -176,20 +155,8 @@ public interface Block extends MaterialState {
 	 */
 	public Source getSource();
 
-	/**
-	 * Sets the source this block represents
-	 * 
-	 * @param source to set to
-	 * @return a clone of this block with the new source set
-	 */
-	public Block setSource(Source source);
-
 	@Override
 	public BlockMaterial getMaterial();
-
-	@Override
-	@Deprecated
-	public BlockMaterial getSubMaterial();
 
 	/**
 	 * Sets the data of this block
@@ -210,6 +177,15 @@ public interface Block extends MaterialState {
 	 */
 	@Override
 	public Block setData(int data);
+
+	/**
+	 * Adds the value to the data of this block
+	 * 
+	 * @param data to add
+	 * @return this Block
+	 * @throws NullPointerException
+	 */
+	public Block addData(int data);
 
 	/**
 	 * Sets the material of this block
@@ -302,7 +278,7 @@ public interface Block extends MaterialState {
 	public boolean isDataBitSet(int bits);
 
 	/**
-	 * Sets the data field from the block.  This is the reverse operation to the getDataField method.<br>
+	 * Sets the data field for the block.  This is the reverse operation to the getDataField method.<br>
 	 * <br>
 	 * newData = ((value << shift) & bits) | (oldData & (~bits))<br>
 	 * <br>
@@ -315,6 +291,21 @@ public interface Block extends MaterialState {
 	@LiveWrite
 	@Threadsafe
 	public int setDataField(int bits, int value);
+
+	/**
+	 * Adds a value to the data field for the block.  This is the reverse operation to the getBlockDataField method.<br>
+	 * <br>
+	 * newData = (((oldData + (value << shift)) & bits) | (oldData & ~bits))<br>
+	 * <br>
+	 * The shift value used shifts the least significant non-zero bit of bits to the LSB position
+	 * 
+	 * @param bits the bits of the field
+	 * @param value to add to the value of the field
+	 * @return the old value of the field
+	 */
+	@LiveWrite
+	@Threadsafe
+	public int addDataField(int bits, int value);
 
 	/**
 	 * Gets the current light level of the block<br>
@@ -411,6 +402,12 @@ public interface Block extends MaterialState {
 	 * of the tick, and will cause the onPlacement method to be called.<br>
 	 */
 	public void resetDynamic();
+	
+	/**
+	 * Immediately resets all dynamic material updates for this block.  This does not trigger the onPlacement() call
+	 */
+	@DelayedWrite
+	public void syncResetDynamic();
 
 	/**
 	 * Queues a dynamic update on this block<br>
@@ -428,16 +425,6 @@ public interface Block extends MaterialState {
 	 * @return the old update for that block at that time instant, or null if none
 	 */
 	public DynamicUpdateEntry dynamicUpdate(long nextUpdate);
-
-	/**
-	 * Queues a dynamic update on this block<br>
-	 * The Block Material must be dynamic for this to function.
-	 * 
-	 * @param nextUpdate the time for the next update
-	 * @param hint non-persistent parameter to speed up the update
-	 * @return the old update for that block at that time instant, or null if none
-	 */
-	public DynamicUpdateEntry dynamicUpdate(long nextUpdate, Object hint);
 	
 	/**
 	 * Queues a dynamic update on this block<br>
@@ -445,8 +432,7 @@ public interface Block extends MaterialState {
 	 * 
 	 * @param nextUpdate the time for the next update
 	 * @param data persistent data to be used for the update
-	 * @param hint non-persistent parameter to speed up the update
 	 * @return the old update for that block at that time instant, or null if none
 	 **/
-	public DynamicUpdateEntry dynamicUpdate(long nextUpdate, int data, Object hint);
+	public DynamicUpdateEntry dynamicUpdate(long nextUpdate, int data);
 }

@@ -24,35 +24,20 @@
  * License and see <http://www.spout.org/SpoutDevLicenseV1.txt> for the full license,
  * including the MIT license.
  */
-package org.spout.api.material.source;
+package org.spout.api.protocol.builtin.handler;
 
+import org.spout.api.event.player.ClientPlayerConnectedEvent;
+import org.spout.api.protocol.ClientMessageHandler;
+import org.spout.api.protocol.Session;
+import org.spout.api.protocol.builtin.SpoutProtocol;
+import org.spout.api.protocol.builtin.message.LoginMessage;
 
-public interface MaterialState extends MaterialData {
-
-	/**
-	 * Sets the material
-	 * 
-	 * @param material to set to
-	 */
-	public MaterialState setMaterial(MaterialSource material);
-
-	/**
-	 * Sets the material and data
-	 * @param material to set to
-	 * @param data value to set to
-	 */
-	public MaterialState setMaterial(MaterialSource material, int data);
-
-	/**
-	 * Sets the material and data
-	 * @param material to set to
-	 * @param datasource of the data to set to
-	 */
-	public MaterialState setMaterial(MaterialSource material, DataSource datasource);
+public class ClientLoginMessageHandler implements ClientMessageHandler<LoginMessage> {
 
 	@Override
-	public MaterialState setData(int data);
-
-	@Override
-	public MaterialState setData(DataSource data);
+	public void handle(Session session, LoginMessage message) {
+		session.getDataMap().put(SpoutProtocol.PLAYER_ENTITY_ID, message.getProtocolVersion());
+		session.setState(Session.State.GAME);
+		session.getEngine().getEventManager().callEvent(new ClientPlayerConnectedEvent(session, message.getProtocolVersion()));
+	}
 }

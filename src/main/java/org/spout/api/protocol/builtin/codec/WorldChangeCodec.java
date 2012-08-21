@@ -31,18 +31,19 @@ import java.util.UUID;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.spout.api.protocol.MessageCodec;
+import org.spout.api.protocol.builtin.ChannelBufferUtils;
 import org.spout.api.protocol.builtin.message.WorldChangeMessage;
 
 public class WorldChangeCodec extends MessageCodec<WorldChangeMessage> {
 	public WorldChangeCodec() {
-		super(WorldChangeMessage.class, 0x02, true);
+		super(WorldChangeMessage.class, 0x02);
 	}
 
 	@Override
 	public ChannelBuffer encode(WorldChangeMessage message) {
-		ChannelBuffer buffer = ChannelBuffers.buffer(8 + 4 + message.getCompressedData().length);
-		buffer.writeLong(message.getWorldUUID().getLeastSignificantBits());
-		buffer.writeLong(message.getWorldUUID().getMostSignificantBits());
+		ChannelBuffer buffer = ChannelBuffers.dynamicBuffer();
+		ChannelBufferUtils.writeString(buffer, message.getWorldName());
+		ChannelBufferUtils.writeUUID(buffer, message.getWorldUUID());
 		buffer.writeInt(message.getCompressedData().length);
 		buffer.writeBytes(message.getCompressedData());
 		return buffer;
@@ -50,10 +51,10 @@ public class WorldChangeCodec extends MessageCodec<WorldChangeMessage> {
 
 	@Override
 	public WorldChangeMessage decode(ChannelBuffer buffer) {
-		final long uuidLSB = buffer.readLong();
-		final long uuidMSB = buffer.readLong();
+		final String worldName = ChannelBufferUtils.readString(buffer);
+		final UUID worldUUID = ChannelBufferUtils.readUUID(buffer);
 		final byte[] compressedData = new byte[buffer.readInt()];
 		buffer.readBytes(compressedData);
-		return new WorldChangeMessage(new UUID(uuidLSB, uuidMSB), compressedData);
+		return new WorldChangeMessage(worldName, worldUUID, compressedData);
 	}
 }

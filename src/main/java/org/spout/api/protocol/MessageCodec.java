@@ -32,17 +32,12 @@ import org.jboss.netty.buffer.ChannelBuffer;
 
 public abstract class MessageCodec<T extends Message> {
 	private final Class<T> clazz;
-	private final int opcode;
-	private final boolean expanded;
+	private int opcode;
+	private boolean dynamic;
 
 	public MessageCodec(Class<T> clazz, int opcode) {
-		this(clazz, opcode, false);
-	}
-
-	public MessageCodec(Class<T> clazz, int opcode, boolean expanded) {
 		this.clazz = clazz;
 		this.opcode = opcode;
-		this.expanded = expanded;
 	}
 
 	public final Class<T> getType() {
@@ -53,11 +48,24 @@ public abstract class MessageCodec<T extends Message> {
 		return opcode;
 	}
 
-	public boolean isExpanded() {
-		return expanded;
+	void setOpcode(int opcode) {
+		this.opcode = opcode;
 	}
 
-	public abstract ChannelBuffer encode(T message) throws IOException;
+	public boolean isDynamic() {
+		return dynamic;
+	}
 
-	public abstract T decode(ChannelBuffer buffer) throws IOException;
+	void setDynamic(boolean dynamic) {
+		this.dynamic = dynamic;
+	}
+
+	public ChannelBuffer encode(T message) throws IOException {
+		return null;
+	}
+
+	public T decode(ChannelBuffer buffer) throws IOException {
+		return null;
+	}
+
 }

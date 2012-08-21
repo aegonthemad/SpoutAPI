@@ -24,27 +24,44 @@
  * License and see <http://www.spout.org/SpoutDevLicenseV1.txt> for the full license,
  * including the MIT license.
  */
-package org.spout.api.protocol.builtin.handler;
+package org.spout.api.material.source;
 
-import org.spout.api.event.player.PlayerConnectEvent;
-import org.spout.api.player.Player;
-import org.spout.api.protocol.MessageHandler;
-import org.spout.api.protocol.Session;
-import org.spout.api.protocol.builtin.SpoutProtocol;
-import org.spout.api.protocol.builtin.message.LoginMessage;
+/**
+ * Represents a {@link DataSource} and a {@link MaterialSource} which can also set the Material and Data
+ */
+public interface MaterialAccess extends MaterialSource {
+	/**
+	 * Sets the material
+	 * 
+	 * @param material to set to
+	 */
+	public MaterialAccess setMaterial(MaterialSource material);
 
-public class LoginMessageHandler extends MessageHandler<LoginMessage> {
+	/**
+	 * Sets the material and data
+	 * @param material to set to
+	 * @param data value to set to
+	 */
+	public MaterialAccess setMaterial(MaterialSource material, int data);
 
-	@Override
-	public void handleServer(Session session, Player player, LoginMessage message) {
-		session.getEngine().getEventManager().callEvent(new PlayerConnectEvent(session, message.getPlayerName()));
-		session.setState(Session.State.GAME);
-		session.send(new LoginMessage("", session.getPlayer().getEntity().getId()));
-	}
+	/**
+	 * Sets the material and data
+	 * @param material to set to
+	 * @param datasource of the data to set to
+	 */
+	public MaterialAccess setMaterial(MaterialSource material, DataSource datasource);
 
-	@Override
-	public void handleClient(Session session, Player player, LoginMessage message) {
-		session.getDataMap().put(SpoutProtocol.PLAYER_ENTITY_ID, message.getProtocolVersion());
-		session.setState(Session.State.GAME);
-	}
+	/**
+	 * Sets the data value
+	 * 
+	 * @param data value
+	 */
+	public MaterialAccess setData(int data);
+
+	/**
+	 * Sets the data value
+	 * 
+	 * @param datasource to get the data from
+	 */
+	public MaterialAccess setData(DataSource datasource);
 }

@@ -35,7 +35,6 @@ import org.spout.api.protocol.builtin.handler.CommandMessageHandler;
 import org.spout.api.protocol.builtin.handler.CuboidBlockUpdateMessageHandler;
 import org.spout.api.protocol.builtin.handler.EntityDatatableMessageHandler;
 import org.spout.api.protocol.builtin.handler.EntityPositionMessageHandler;
-import org.spout.api.protocol.builtin.handler.LoginMessageHandler;
 import org.spout.api.protocol.builtin.handler.PlayerInputMessageHandler;
 import org.spout.api.protocol.builtin.handler.RemoveEntityMessageHandler;
 import org.spout.api.protocol.builtin.handler.StringMapMessageHandler;
@@ -48,7 +47,6 @@ import org.spout.api.protocol.builtin.message.CommandMessage;
 import org.spout.api.protocol.builtin.message.CuboidBlockUpdateMessage;
 import org.spout.api.protocol.builtin.message.EntityDatatableMessage;
 import org.spout.api.protocol.builtin.message.EntityPositionMessage;
-import org.spout.api.protocol.builtin.message.LoginMessage;
 import org.spout.api.protocol.builtin.message.PlayerInputMessage;
 import org.spout.api.protocol.builtin.message.RemoveEntityMessage;
 import org.spout.api.protocol.builtin.message.StringMapMessage;
@@ -57,7 +55,6 @@ import org.spout.api.protocol.builtin.message.WorldChangeMessage;
 public class SpoutHandlerLookupService extends HandlerLookupService {
 	public SpoutHandlerLookupService() {
 		try {
-			bind(LoginMessage.class, LoginMessageHandler.class);
 			bind(StringMapMessage.class, StringMapMessageHandler.class);
 			bind(WorldChangeMessage.class, WorldChangeMessageHandler.class);
 			bind(CommandMessage.class, CommandMessageHandler.class);

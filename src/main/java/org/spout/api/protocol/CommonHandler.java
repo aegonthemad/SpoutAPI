@@ -26,9 +26,8 @@
  */
 package org.spout.api.protocol;
 
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
-
-import org.spout.api.Server;
 
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelHandlerContext;
@@ -36,54 +35,63 @@ import org.jboss.netty.channel.ChannelStateEvent;
 import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
+import org.spout.api.Engine;
 
 /**
  * A {@link SimpleChannelUpstreamHandler} which processes incoming network events.
  *
  */
 public class CommonHandler extends SimpleChannelUpstreamHandler {
-	/**
-	 * The server.
-	 */
-	private final Server server;
 
 	/**
 	 * The associated session
 	 */
-	private volatile Session session = null;
+	private AtomicReference<Session> session = new AtomicReference<Session>(null);
+
+	private final CommonDecoder decoder;
+	private final CommonEncoder encoder;
+
+	private final Engine engine;
 
 	/**
 	 * Creates a new network event handler.
-	 *
-	 * @param server The server.
 	 */
-	public CommonHandler(Server server) {
-		this.server = server;
+	public CommonHandler(Engine engine, CommonEncoder encoder, CommonDecoder decoder) {
+		this.engine = engine;
+		this.encoder = encoder;
+		this.decoder = decoder;
 	}
 
 	@Override
 	public void channelConnected(ChannelHandlerContext ctx, ChannelStateEvent e) {
 		Channel c = e.getChannel();
-		server.getChannelGroup().add(c);
 
-		Session session = server.newSession(c);
-		server.getSessionRegistry().add(session);
-		ctx.setAttachment(session);
-		this.session = session;
+		// ctx.getPipeline().addBefore("2", "messagePrinter", new MessagePrintingHandler());
 
-		server.getLogger().info("Channel connected: " + c + ".");
+		try {
+			engine.getChannelGroup().add(c);
+			Session session = engine.newSession(c);
+			engine.getSessionRegistry().add(session);
+			setSession(session);
+			ctx.setAttachment(session);
+
+			engine.getLogger().info("Downstream channel connected: " + c + ".");
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			throw new RuntimeException("Exception thrown when connecting", ex);
+		}
 	}
 
 	@Override
 	public void channelDisconnected(ChannelHandlerContext ctx, ChannelStateEvent e) {
 		Channel c = e.getChannel();
-		server.getChannelGroup().remove(c);
+		engine.getChannelGroup().remove(c);
 
 		Session session = (Session) ctx.getAttachment();
-		server.getSessionRegistry().remove(session);
+		engine.getSessionRegistry().remove(session);
 		session.dispose();
 
-		server.getLogger().info("Channel disconnected: " + c + ".");
+		engine.getLogger().info("Channel disconnected: " + c + ".");
 	}
 
 	@Override
@@ -96,24 +104,24 @@ public class CommonHandler extends SimpleChannelUpstreamHandler {
 	public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) {
 		Channel c = e.getChannel();
 		if (c.isOpen()) {
-			server.getChannelGroup().remove(c);
+			engine.getChannelGroup().remove(c);
 
 			Session session = (Session) ctx.getAttachment();
 			if (session != null) {
-				server.getSessionRegistry().remove(session);
+				engine.getSessionRegistry().remove(session);
 				session.dispose();
 			}
 
-			server.getLogger().log(Level.WARNING, "Exception caught, closing channel: " + c + "...", e.getCause());
+			engine.getLogger().log(Level.WARNING, "Exception caught, closing channel: " + c + "...", e.getCause());
 			c.close();
 		}
 	}
 
-	public void setProtocol(Protocol protocol) {
-		if (session != null) {
-			session.setProtocol(protocol);
-		} else {
-			throw new IllegalStateException("The protocol cannot be set before the channel is associated with a session");
+	public void setSession(Session session) {
+		if (!this.session.compareAndSet(null, session)) {
+			throw new IllegalStateException("Session may not be set more than once");
 		}
+		decoder.setProtocol(session.getProtocol());
+		encoder.setProtocol(session.getProtocol());
 	}
 }

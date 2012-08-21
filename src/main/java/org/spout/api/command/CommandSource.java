@@ -27,6 +27,7 @@
 package org.spout.api.command;
 
 import org.spout.api.Source;
+import org.spout.api.chat.ChatArguments;
 import org.spout.api.data.DataSubject;
 import org.spout.api.permissions.PermissionsSubject;
 
@@ -40,6 +41,30 @@ public interface CommandSource extends PermissionsSubject, DataSubject, Source {
 	public boolean sendMessage(Object... message);
 
 	/**
+	 * Send a command to the other side (if server, send to client, and vice versa)
+	 *
+	 * @param command The command to send
+	 * @param arguments The arguments to send with the command
+	 */
+	public void sendCommand(String command, ChatArguments arguments);
+
+	/**
+	 * Handle a command locally
+	 *
+	 * @param command The command to handle
+	 * @param arguments The command's arguments
+	 */
+	public void processCommand(String command, ChatArguments arguments);
+
+	/**
+	 * Sends a text message to the source of the command.
+	 *
+	 * @param message the message to send
+	 * @return whether the message was sent correctly
+	 */
+	public boolean sendMessage(ChatArguments message);
+
+	/**
 	 * Sends a message to the client without any processing by the server,
 	 * except to prevent exploits.
 	 *
@@ -47,4 +72,13 @@ public interface CommandSource extends PermissionsSubject, DataSubject, Source {
 	 * @return whether the message was sent correctly
 	 */
 	public boolean sendRawMessage(Object... message);
+
+	/**
+	 * Sends a message to the client without any processing by the server,
+	 * except to prevent exploits.
+	 *
+	 * @param message The message to send
+	 * @return whether the message was sent correctly
+	 */
+	public boolean sendRawMessage(ChatArguments message);
 }

@@ -35,7 +35,7 @@ import java.lang.annotation.Target;
  * Command methods that require a specific permissions node should be annotated
  * with this.
  */
-@Target(ElementType.METHOD)
+@Target({ElementType.METHOD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface CommandPermissions {
 	public String[] value();

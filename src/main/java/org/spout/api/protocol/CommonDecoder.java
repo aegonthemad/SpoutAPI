@@ -32,87 +32,48 @@ import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.handler.codec.replay.ReplayingDecoder;
+import org.spout.api.Client;
 import org.spout.api.Spout;
-import org.spout.api.protocol.bootstrap.BootstrapProtocol;
-import org.spout.api.protocol.replayable.ReplayableError;
+import org.spout.api.exception.UnknownPacketException;
 
 /**
  * A {@link ReplayingDecoder} which decodes {@link ChannelBuffer}s into
  * Common {@link org.spout.api.protocol.Message}s.
  */
 public class CommonDecoder extends PreprocessReplayingDecoder {
-	private volatile CodecLookupService codecLookup = null;
 	private int previousOpcode = -1;
-	private volatile BootstrapProtocol bootstrapProtocol;
-	private final CommonHandler handler;
-	private final CommonEncoder encoder;
+	private volatile Protocol protocol;
 
-	public CommonDecoder(CommonHandler handler, CommonEncoder encoder) {
+	public CommonDecoder() {
 		super(512);
-		this.encoder = encoder;
-		this.handler = handler;
 	}
 
 	@Override
 	protected Object decodeProcessed(ChannelHandlerContext ctx, Channel c, ChannelBuffer buf) throws Exception {
-		if (codecLookup == null) {
-			bootstrapProtocol = Spout.getEngine().getBootstrapProtocol(c.getLocalAddress());
-			codecLookup = bootstrapProtocol.getCodecLookupService();
+		if (protocol == null) {
+			if (Spout.getEngine() instanceof Client) {
+				protocol = ((Client) Spout.getEngine()).getAddress().getProtocol();
+			} else {
+				protocol = Spout.getEngine().getProtocol(c.getLocalAddress());
+			}
 		}
 
-		int opcode;
-		
+		MessageCodec<?> codec;
 		try {
-			opcode = buf.getUnsignedShort(buf.readerIndex());
+			codec = protocol.readHeader(buf);
+		} catch (UnknownPacketException e) {
+			throw new IOException("Unknown operation code: " + e.getOpcode() + " (previous opcode: " + Integer.toHexString(previousOpcode)+ ").");
 		}
-		catch (ReplayableError e) {
-			opcode = buf.getUnsignedByte(buf.readerIndex()) << 8;
-		}
-		
-		MessageCodec<?> codec = codecLookup.find(opcode);
+
 		if (codec == null) {
-			if (bootstrapProtocol != null) {
-				Protocol protocol = bootstrapProtocol.getDefaultProtocol();
-				if (protocol != null) {
-					setProtocol(protocol);
-					codec = codecLookup.find(opcode);
-				}
-			}
-			if (codec == null) {
-				throw new IOException("Unknown operation code: " + opcode + " (previous opcode: " + previousOpcode + ").");
-			}
+			return buf;
 		}
 
-		if (codec.isExpanded()) {
-			buf.readShort();
-		} else {
-			buf.readByte();
-		}
-
-		previousOpcode = opcode;
-
-		Message message = codec.decode(buf);
-
-		if (bootstrapProtocol != null) {
-			String id = bootstrapProtocol.detectProtocolDefinition(message);
-			if (id != null) {
-				Protocol protocol = Protocol.getProtocol(id);
-
-				if (protocol != null) {
-					setProtocol(protocol);
-				} else {
-					throw new IllegalStateException("No protocol associated with an id of " + id);
-				}
-			}
-		}
-
-		return message;
+		previousOpcode = codec.getOpcode();
+		return codec.decode(buf);
 	}
-	
-	private void setProtocol(Protocol protocol) {
-		codecLookup = protocol.getCodecLookupService();
-		encoder.setProtocol(protocol);
-		handler.setProtocol(protocol);
-		bootstrapProtocol = null;
+
+	void setProtocol(Protocol proto) {
+		this.protocol = proto;
 	}
 }

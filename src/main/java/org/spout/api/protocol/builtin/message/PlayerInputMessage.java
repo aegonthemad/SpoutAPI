@@ -31,43 +31,19 @@ import org.spout.api.protocol.Message;
 import org.spout.api.util.SpoutToStringStyle;
 
 public class PlayerInputMessage extends Message {
-	private final boolean fwd, back, left, right;
-	private final boolean mouseWheelUp, mouseWheelDown;
+	private final short inputFlags;
 	private final short mouseDx, mouseDy;
 
-	public PlayerInputMessage(boolean fwd, boolean back, boolean left, boolean right, boolean mouseWheelUp, boolean mouseWheelDown, short mouseDx, short mouseDy) {
-		this.fwd = fwd;
-		this.back = back;
-		this.left = left;
-		this.right = right;
-		this.mouseWheelUp = mouseWheelUp;
-		this.mouseWheelDown = mouseWheelDown;
+	public PlayerInputMessage(short inputFlags, short mouseDx, short mouseDy) {
+		this.inputFlags = inputFlags;
+
 		this.mouseDx = mouseDx;
 		this.mouseDy = mouseDy;
 	}
 
-	public boolean isFwd() {
-		return fwd;
-	}
 
-	public boolean isBack() {
-		return back;
-	}
-
-	public boolean isLeft() {
-		return left;
-	}
-
-	public boolean isRight() {
-		return right;
-	}
-
-	public boolean isMouseWheelUp() {
-		return mouseWheelUp;
-	}
-
-	public boolean isMouseWheelDown() {
-		return mouseWheelDown;
+	public short getInputFlags() {
+		return inputFlags;
 	}
 
 	public short getMouseDx() {
@@ -81,12 +57,7 @@ public class PlayerInputMessage extends Message {
 	@Override
 	public String toString() {
 		return new ToStringBuilder(this, SpoutToStringStyle.INSTANCE)
-				.append("fwd", fwd)
-				.append("back", back)
-				.append("left", left)
-				.append("right", right)
-				.append("mouseWheelUp", mouseWheelUp)
-				.append("mouseWheelDown", mouseWheelDown)
+				.append("inputFlags", inputFlags)
 				.append("mouseDx", mouseDx)
 				.append("mouseDy", mouseDy)
 				.toString();

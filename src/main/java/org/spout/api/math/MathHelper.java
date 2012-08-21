@@ -312,10 +312,22 @@ public class MathHelper {
 	}
 
 	//Fast Math Implementation
+	/**
+	 * Fast implementation of cos(x).  If -PI <= x <= PI, then the maximum error is 0.0015
+	 * 
+	 * @param x in radians
+	 * @return sin(x)
+	 */
 	public final static double cos(final double x) {
 		return sin(x + (x > HALF_PI ? -THREE_PI_HALVES : HALF_PI));
 	}
 
+	/**
+	 * Fast implementation of sin(x).  If -PI <= x <= PI, then the maximum error is 0.0015
+	 * 
+	 * @param x in radians
+	 * @return sin(x)
+	 */
 	public final static double sin(double x) {
 		x = sin_a * x * Math.abs(x) + sin_b * x;
 		return sin_p * (x * Math.abs(x) - x) + x;
@@ -410,6 +422,30 @@ public class MathHelper {
 			x |= x >> 4;
 			x |= x >> 8;
 			x |= x >> 16;
+			x++;
+			return x;
+		}
+	}
+	
+	/**
+	 * Rounds an integer up to the next power of 2.
+	 *
+	 * @param x
+	 * @return the lowest power of 2 greater or equal to x
+	 */
+	public static long roundUpPow2(long x) {
+		if (x <= 0) {
+			return 1;
+		} else if (x > 0x4000000000000000L) {
+			throw new IllegalArgumentException("Rounding " + x + " to the next highest power of two would exceed the int range");
+		} else {
+			x--;
+			x |= x >> 1;
+			x |= x >> 2;
+			x |= x >> 4;
+			x |= x >> 8;
+			x |= x >> 16;
+			x |= x >> 32;
 			x++;
 			return x;
 		}
@@ -1097,7 +1133,7 @@ public class MathHelper {
 	 * @param ammount
 	 * @return
 	 */
-	public static Matrix multiply(float ammount) {
+	public static Matrix scale(float ammount) {
 		Matrix res = createIdentity();
 		res.set(0, 0, ammount);
 		res.set(1, 1, ammount);
@@ -1112,7 +1148,7 @@ public class MathHelper {
 	 * @param ammount
 	 * @return
 	 */
-	public static Matrix multiply(Vector3 ammount) {
+	public static Matrix scale(Vector3 ammount) {
 		Matrix res = createIdentity();
 		res.set(0, 0, ammount.getX());
 		res.set(1, 1, ammount.getY());
@@ -1335,5 +1371,9 @@ public class MathHelper {
 			ret = "0"+ret;
 		}
 		return ret;
+	}
+	
+	public static int mod(int x, int div) {
+		return x < 0 ? (x % div) + div : x % div;
 	}
 }

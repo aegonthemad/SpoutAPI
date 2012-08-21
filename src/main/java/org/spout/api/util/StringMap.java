@@ -27,12 +27,16 @@
 package org.spout.api.util;
 
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.spout.api.io.store.simple.MemoryStore;
 import org.spout.api.io.store.simple.SimpleStore;
@@ -79,6 +83,18 @@ public class StringMap {
 		return null;
 	}
 
+	public static Collection<StringMap> getAll() {
+		Collection<WeakReference<StringMap>> rawMaps = REGISTERED_MAPS.values();
+		List<StringMap> maps = new ArrayList<StringMap>(rawMaps.size());
+		for (WeakReference<StringMap> ref : rawMaps) {
+			StringMap map = ref.get();
+			if (map != null) {
+				maps.add(map);
+			}
+		}
+		return maps;
+	}
+
 	private StringMap(int id) {
 		this.id = id;
 		this.parent = null;
@@ -93,9 +109,9 @@ public class StringMap {
 	/**
 	 * @param parent the parent of this map
 	 * @param store the store to store ids
-	 * @param updateTask the task to call on update
 	 * @param minId the lowest valid id for dynamic allocation (ids below this are assumed to be reserved)
 	 * @param maxId the highest valid id + 1
+	 * @param name The name of this StringMap
 	 */
 	public StringMap(StringMap parent, SimpleStore<Integer> store, int minId, int maxId, String name) {
 		this.parent = parent;
@@ -303,8 +319,16 @@ public class StringMap {
 		}
 	}
 
+	public List<Pair<Integer, String>> getItems() {
+		List<Pair<Integer, String>> items = new ArrayList<Pair<Integer, String>>();
+		for (Map.Entry<String, Integer> entry : store.getEntrySet()) {
+			items.add(new ImmutablePair<Integer, String>(entry.getValue(), entry.getKey()));
+		}
+		return items;
+	}
+
 	public void clear() {
-		while (!this.nextId.compareAndSet(minId, minId)) {
+		while (this.nextId.getAndSet(minId) != minId) {
 			if (this.parent != null) {
 				for (int i = 0; i < maxId; i++) {
 					thisToParentMap.set(i, 0);

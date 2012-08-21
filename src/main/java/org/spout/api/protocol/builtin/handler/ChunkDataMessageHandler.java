@@ -28,17 +28,22 @@ package org.spout.api.protocol.builtin.handler;
 
 import org.spout.api.geo.cuboid.Chunk;
 import org.spout.api.player.Player;
-import org.spout.api.protocol.MessageHandler;
+import org.spout.api.protocol.ClientMessageHandler;
 import org.spout.api.protocol.Session;
 import org.spout.api.protocol.builtin.message.ChunkDataMessage;
 
 /**
  * 
  */
-public class ChunkDataMessageHandler extends MessageHandler<ChunkDataMessage> {
+public class ChunkDataMessageHandler implements ClientMessageHandler<ChunkDataMessage> {
 	@Override
-	public void handleClient(Session session, Player player, ChunkDataMessage message) {
-		Chunk chunk = player.getEntity().getWorld().getChunk(message.getX(), message.getY(), message.getZ());
+	public void handle(Session session, ChunkDataMessage message) {
+		if(!session.hasPlayer()) {
+			return;
+		}
+
+		Player player = session.getPlayer();
+		Chunk chunk = player.getWorld().getChunk(message.getX(), message.getY(), message.getZ());
 		// TODO: Set chunk data from packet
 		//chunk.load(message.getBlockIds(), message.getBlockData(), message.getBlockLight(), message.getSkyLight(), message.getBiomeData());
 	}

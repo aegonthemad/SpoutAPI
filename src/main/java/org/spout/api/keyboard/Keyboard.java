@@ -28,8 +28,17 @@ package org.spout.api.keyboard;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 public enum Keyboard {
+	// TODO add meta-keys for operating systems
+	// Control-Key: ctrl on windows, linux, cmd on mac
+	// Word-modifier-key: ctrl on windows, linux, alt on mac
+	// line-modifier-key none on windows, linux, cmd on mac
+	// selection-key: shift on all operating systems
+	// There are probably some more that I forgot
+	
 	CHAR_NONE(0),
 	KEY_NONE(0),
 	KEY_ESCAPE(1),
@@ -162,6 +171,8 @@ public enum Keyboard {
 
 	private final int keyCode;
 	private static final Map<Integer, Keyboard> lookupKeyCode = new HashMap<Integer, Keyboard>();
+	private static final boolean[] pressedCache = new boolean[KEYBOARD_SIZE.getKeyCode()];
+	private static final Queue<KeyEvent> eventQueue = new LinkedBlockingQueue<KeyEvent>();
 
 	Keyboard(final int i) {
 		keyCode = i;
@@ -186,5 +197,45 @@ public enum Keyboard {
 		for (Keyboard key : values()) {
 			lookupKeyCode.put(key.keyCode, key);
 		}
+	}
+	
+	/**
+	 * Checks for new keyboard events
+	 */
+	public static void doEventCheck() {
+		while(org.lwjgl.input.Keyboard.next()) {
+			Keyboard key = getKey(org.lwjgl.input.Keyboard.getEventKey());
+			boolean pressed = org.lwjgl.input.Keyboard.getEventKeyState();
+			pressedCache[key.getKeyCode()] = pressed;
+			char character = org.lwjgl.input.Keyboard.getEventCharacter();
+			long time = org.lwjgl.input.Keyboard.getEventNanoseconds();
+			KeyEvent event = new KeyEvent(key, pressed, character, time);
+			eventQueue.offer(event);
+		}
+	}
+	
+	/**
+	 * Clears the pressed cache
+	 * This will simulate a keyrelease event for all keys that are currently down.
+	 * This is useful when there is a sticky-key problem when the instance loses focus.
+	 */
+	public static void clearCache() {
+		for (int i = 0; i < pressedCache.length; i++) {
+			if (pressedCache[i]) {
+				eventQueue.offer(new KeyEvent(getKey(i), false, '\0', System.currentTimeMillis()));
+				pressedCache[i] = false;
+			}
+		}
+	}
+	
+	/**
+	 * @return the next keyevent
+	 */
+	public static KeyEvent nextEvent() {
+		return eventQueue.poll();
+	}
+	
+	public static boolean isKeyDown(Keyboard key) {
+		return pressedCache[key.getKeyCode()];
 	}
 }

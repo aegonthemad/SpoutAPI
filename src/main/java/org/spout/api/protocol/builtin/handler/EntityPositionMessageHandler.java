@@ -27,18 +27,28 @@
 package org.spout.api.protocol.builtin.handler;
 
 import org.spout.api.entity.Entity;
-import org.spout.api.player.Player;
-import org.spout.api.protocol.MessageHandler;
+import org.spout.api.protocol.ClientMessageHandler;
 import org.spout.api.protocol.Session;
+import org.spout.api.protocol.builtin.SpoutProtocol;
 import org.spout.api.protocol.builtin.message.EntityPositionMessage;
 
 /**
- * 
+ *
  */
-public class EntityPositionMessageHandler extends MessageHandler<EntityPositionMessage> {
+public class EntityPositionMessageHandler implements ClientMessageHandler<EntityPositionMessage> {
 	@Override
-	public void handleClient(Session session, Player player, EntityPositionMessage message) {
-		Entity entity = player.getEntity().getWorld().getEntity(message.getEntityId());
+	public void handle(Session session, EntityPositionMessage message) {
+		if(!session.hasPlayer()) {
+			return;
+		}
+
+		Entity entity;
+		if (message.getEntityId() == session.getDataMap().get(SpoutProtocol.PLAYER_ENTITY_ID)) {
+			entity = session.getPlayer();
+		} else {
+			entity = session.getEngine().getDefaultWorld().getEntity(message.getEntityId());
+		}
+
 		if (entity != null) {
 			entity.setTransform(message.getTransform());
 		}

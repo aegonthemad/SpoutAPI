@@ -78,6 +78,15 @@ public class IntVector2 {
 	}
 	
 	/**
+	 * Gets whether all of the axis in this IntVector are zero
+	 * 
+	 * @return True if all axis are zero
+	 */
+	public boolean isZero() {
+		return this.x == 0 && this.y == 0;
+	}
+	
+	/**
 	 * Adds the given vector to this vector
 	 * 
 	 * @param other

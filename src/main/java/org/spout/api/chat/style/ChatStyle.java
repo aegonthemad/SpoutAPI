@@ -28,11 +28,9 @@ package org.spout.api.chat.style;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.spout.api.chat.style.fallback.DefaultStyleHandler;
 import org.spout.api.io.store.simple.MemoryStore;
 import org.spout.api.util.StringMap;
 
@@ -73,8 +71,8 @@ public abstract class ChatStyle {
 	}
 
 	/**
-	 * Looks up a ChatStyle by it's ID.
-	 * 
+	 * Looks up a ChatStyle by its ID.
+	 *
 	 * @param id
 	 * @return the ChatStyle, or null if not found.
 	 */
@@ -83,8 +81,8 @@ public abstract class ChatStyle {
 	}
 
 	/**
-	 * Looks up a ChatStyle by it's name.
-	 * 
+	 * Looks up a ChatStyle by its name.
+	 *
 	 * @param name
 	 * @return the ChatStyle, or null if not found.
 	 */
@@ -96,10 +94,10 @@ public abstract class ChatStyle {
 	}
 
 	/**
-	 * Removes all ChatStyle's from the given string.
-	 * 
+	 * Removes all ChatStyles from the given string.
+	 *
 	 * @param str to strip.
-	 * @return String with all ChatSyle's removed.
+	 * @return String with all ChatStyles removed.
 	 */
 	public static String strip(String str) {
 		for (StyleHandler handler : StyleHandler.getAll()) {
@@ -110,93 +108,6 @@ public abstract class ChatStyle {
 
 	public static String strip(int handlerId, String str) {
 		return StyleHandler.get(handlerId).stripStyle(str);
-	}
-
-	public static String stringify(Object... vals) {
-		return stringify(DefaultStyleHandler.ID, vals);
-	}
-
-	/**
-	 * Start from end of array, append strings as they appear. If a chatcolor appears, apply it to existing text.
-	 * If this existing text has already been formatted, check for conflicts
-	 * If no conflicts, append existing text to the area to be formatted
-	 *
-	 * @param handlerId The handlerId to use to get the {@link StyleFormatter StyleFormatters} for ChatStyles
-	 * @param vals The values to convert to a string
-	 * @return The formatted string.
-	 */
-	//
-	public static String stringify(int handlerId, Object... vals) {
-		vals = clean(vals);
-		StringBuilder finalBuilder = new StringBuilder();
-		StringBuilder singleBuilder = new StringBuilder();
-		StyleHandler handler = StyleHandler.get(handlerId);
-		ChatStyle previousStyle = null;
-
-		for (int i = vals.length - 1; i >= 0; --i) {
-			if (vals[i] instanceof ChatStyle) {
-				ChatStyle style = (ChatStyle) vals[i];
-				if (previousStyle != null) {
-					if (previousStyle.conflictsWith(style)) {
-						finalBuilder.insert(0, handler.getFormatter(style).format(singleBuilder.toString()));
-					} else {
-						// oh god teh ugliness
-						String formatted = handler.getFormatter(style).format(finalBuilder.toString());
-						finalBuilder.delete(0, finalBuilder.length());
-						finalBuilder.append(formatted);
-						finalBuilder.insert(0, handler.getFormatter(style).format(singleBuilder.toString()));
-					}
-				} else {
-					finalBuilder.insert(0, handler.getFormatter(style).format(singleBuilder.toString()));
-				}
-				previousStyle = style;
-				singleBuilder.delete(0, singleBuilder.length());
-			} else {
-				singleBuilder.insert(0, String.valueOf(vals[i]));
-			}
-		}
-
-		if (singleBuilder.length() > 0) {
-			finalBuilder.insert(0, singleBuilder);
-		}
-		return finalBuilder.toString();
-	}
-
-	/**
-	 * Clean an object array so its elements are all expanded to be used with {@link #stringify(int, Object...)}
-	 * @param vals The values
-	 * @return The output array. Not necessarily the input array.
-	 */
-	public static Object[] clean(Object[] vals) {
-		if (vals.length == 1 && vals[0] instanceof List<?>) {
-			vals = ((List<?>) vals[0]).toArray();
-		}
-
-		for (int i = 0; i < vals.length; ++i) {
-			if (vals[i] == null) {
-				continue;
-			}
-
-			if (vals[i] instanceof List<?>) {
-				List<?> addList = (List<?>) vals[i];
-				vals[i] = addList.toArray();
-			}
-
-			if (vals[i].getClass().isArray() && Object.class.isAssignableFrom(vals[i].getClass().getComponentType())) {
-				Object[] arr = (Object[]) vals[i];
-				if (arr.length == 0) {
-					vals[i] = "";
-					continue;
-				}
-
-				Object[] newVals = new Object[vals.length + arr.length - 1];
-				System.arraycopy(vals, 0, newVals, 0, i);
-				System.arraycopy(arr, 0, newVals, i, arr.length);
-				System.arraycopy(vals, i + 1, newVals, i + arr.length, vals.length - i - 1);
-				vals = newVals;
-			}
-		}
-		return vals;
 	}
 
 	private final String name;
