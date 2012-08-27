@@ -33,10 +33,12 @@ import java.io.IOException;
  *
  */
 public class UnknownPacketException extends IOException {
+	private static final long serialVersionUID = 2479966238464122702L;
+
 	private final int opcode;
 
 	public UnknownPacketException(int opcode) {
-		super("Unknown opcode: " + opcode);
+		super("Unknown opcode: " + Integer.toHexString(opcode));
 		this.opcode = opcode;
 	}
 
