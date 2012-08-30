@@ -29,6 +29,7 @@ package org.spout.api.command;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -36,10 +37,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.annotation.Nullable;
+
+import com.google.common.base.Predicate;
+import com.google.common.collect.Collections2;
+import org.apache.commons.lang3.Validate;
 import org.spout.api.Engine;
 import org.spout.api.Spout;
 import org.spout.api.chat.ChatArguments;
 import org.spout.api.chat.ChatSection;
+import org.spout.api.chat.completion.CompletionRequest;
+import org.spout.api.chat.completion.CompletionResponse;
 import org.spout.api.chat.style.ChatStyle;
 import org.spout.api.event.server.PreCommandEvent;
 import org.spout.api.exception.CommandException;
@@ -71,6 +79,8 @@ public class SimpleCommand implements Command {
 	protected int minArgLength = 0, maxArgLength = -1;
 
 	public SimpleCommand(Named owner, String... names) {
+		Validate.notNull(owner);
+		Validate.noNullElements(names);
 		aliases.addAll(Arrays.asList(names));
 		this.owner = owner;
 	}
@@ -157,6 +167,9 @@ public class SimpleCommand implements Command {
 	}
 
 	public Command setExecutor(Platform platform, CommandExecutor executor) {
+		Validate.notNull(platform);
+		Validate.notNull(executor);
+
 		if (!isLocked()) {
 			this.executors.put(platform, executor);
 		}
@@ -164,6 +177,7 @@ public class SimpleCommand implements Command {
 	}
 
 	public Command addFlags(String flagString) {
+		Validate.notNull(flagString);
 		if (!isLocked()) {
 			char[] raw = flagString.toCharArray();
 			for (int i = 0; i < raw.length; ++i) {
@@ -194,6 +208,10 @@ public class SimpleCommand implements Command {
 	}
 
 	public void execute(CommandSource source, String name, List<ChatSection> args, int baseIndex, boolean fuzzyLookup) throws CommandException {
+		Validate.notNull(source);
+		Validate.notNull(name);
+		Validate.notNull(args);
+
 		if (rawExecutor != null) {
 			rawExecutor.execute(this, source, name, args, baseIndex, fuzzyLookup);
 			return;
@@ -345,6 +363,8 @@ public class SimpleCommand implements Command {
 	}
 
 	public Command getChild(String name, boolean fuzzyLookup) {
+		Validate.notNull(name);
+
 		name = name.toLowerCase();
 		Command command = children.get(name);
 		if (command != null) {
@@ -406,23 +426,7 @@ public class SimpleCommand implements Command {
 		if (command == null) {
 			return this;
 		}
-		Map<String, Command> removeAliases = new HashMap<String, Command>();
-		for (Iterator<Command> i = children.values().iterator(); i.hasNext();) {
-			Command cmd = i.next();
-			if (command.equals(cmd)) {
-				i.remove();
-				for (String alias : cmd.getNames()) {
-					Command aliasCmd = children.get(alias);
-					if (cmd.equals(aliasCmd)) {
-						removeAliases.put(alias, aliasCmd);
-					}
-				}
-			}
-		}
-		for (Map.Entry<String, Command> entry : removeAliases.entrySet()) {
-			entry.getValue().removeAlias(entry.getKey());
-		}
-		return this;
+		return removeChild(command);
 	}
 
 	@Override
@@ -561,5 +565,44 @@ public class SimpleCommand implements Command {
 		}
 		maxArgLength = max;
 		return this;
+	}
+
+	@Override
+	public CompletionResponse getCompletion(CompletionRequest input) {
+		return getCompletion(input, 0);
+	}
+
+	public CompletionResponse getCompletion(CompletionRequest input, int baseIndex) {
+		if (children.size() > 0 && baseIndex < input.getSections().size() - 1) {
+			Command child = getChild(input.getSections().get(baseIndex + 1).getPlainString());
+			if (child != null) {
+				return child.getCompletion(input, baseIndex + 1);
+			} else {
+				return new CompletionResponse(true, input, getMatchingChildren(input.getSections().get(baseIndex + 1).getPlainString()));
+			}
+		}
+		// TODO: Return completion responses for the usage (could be done in CommandExecutor - Typed arguments would be nice for this)
+		return null;
+	}
+
+	public List<ChatArguments> getMatchingChildren(final String plainString) {
+		List<ChatArguments> responses = new ArrayList<ChatArguments>();
+		List<String> names = new ArrayList<String>();
+
+		names.addAll(
+				Collections2.filter(getChildNames(), new Predicate<String>() {
+					public boolean apply(@Nullable String s) {
+						return s != null
+								&& !s.equalsIgnoreCase(plainString)
+								&& s.toLowerCase().startsWith(plainString.toLowerCase());
+					}
+				}));
+
+		Collections.sort(names, new Comparator<String>() {
+			public int compare(String a, String b) {
+				return StringUtil.getLevenshteinDistance(plainString, b) - StringUtil.getLevenshteinDistance(plainString,  a);
+			}
+		});
+		return responses;
 	}
 }

@@ -31,7 +31,7 @@ import org.spout.api.chat.ChatTemplate;
 import org.spout.api.chat.Placeholder;
 import org.spout.api.event.Cancellable;
 import org.spout.api.event.HandlerList;
-import org.spout.api.player.Player;
+import org.spout.api.entity.Player;
 
 /**
  * Called when a player speaks in chat.
@@ -40,13 +40,12 @@ import org.spout.api.player.Player;
 public class PlayerChatEvent extends PlayerEvent implements Cancellable {
 	public static final Placeholder NAME = new Placeholder("name"), MESSAGE = new Placeholder("message");
 	private static final HandlerList HANDLERS = new HandlerList();
-
 	private ChatArguments message;
 	private ChatTemplate format = new ChatTemplate(new ChatArguments("<", NAME, "> ", MESSAGE));
 
-	public PlayerChatEvent(Player p, ChatArguments message) {
+	public PlayerChatEvent(Player p, Object... message) {
 		super(p);
-		this.message = message;
+		this.message = new ChatArguments(message);
 	}
 
 	/**

@@ -27,7 +27,7 @@
 package org.spout.api.geo;
 
 import org.spout.api.Source;
-import org.spout.api.entity.component.controller.BlockController;
+import org.spout.api.entity.controller.BlockController;
 import org.spout.api.geo.cuboid.Block;
 import org.spout.api.material.BlockMaterial;
 import org.spout.api.math.Vector3;
@@ -103,10 +103,10 @@ public interface AreaBlockAccess extends AreaBlockSource {
 	public boolean setBlockSkyLight(int x, int y, int z, byte light, Source source);
 
 	/**
-	 * Sets the block controller for the block at (x, y, z) to the given controller
+	 * Sets the block entity for the block at (x, y, z) to the given entity
 	 *
-	 * @param x,y,z position of the controller
-	 * @param controller to set to, null to remove the controller
+	 * @param x,y,z position of the entity
+	 * @param controller to set to, null to remove the entity
 	 * @throws NullPointerException
 	 */
 	@LiveWrite

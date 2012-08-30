@@ -113,4 +113,9 @@ public class SignalObject extends BasicTickable implements SignalInterface {
 	@Override
 	public void onTick(float dt) {
 	}
+
+	@Override
+	public boolean canTick() {
+		return true;
+	}
 }

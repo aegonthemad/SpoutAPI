@@ -27,17 +27,20 @@
 package org.spout.api.protocol.builtin.message;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.spout.api.geo.cuboid.ChunkSnapshot;
 import org.spout.api.protocol.Message;
 import org.spout.api.util.SpoutToStringStyle;
 
-public class ChunkDataMessage extends Message {
+public class ChunkDataMessage implements Message {
 	private final boolean unload;
 	private final int x, y, z;
 	private final short[] blockIds, blockData;
 	private final byte[] blockLight, skyLight;
 	private final byte[] biomeData;
+	private final String biomeManagerClass;
 
 	public ChunkDataMessage(int x, int y, int z) {
 		this.unload = true;
@@ -49,6 +52,7 @@ public class ChunkDataMessage extends Message {
 		this.blockLight = ArrayUtils.EMPTY_BYTE_ARRAY;
 		this.skyLight = ArrayUtils.EMPTY_BYTE_ARRAY;
 		this.biomeData = null;
+		this.biomeManagerClass = null;
 	}
 
 	public ChunkDataMessage(ChunkSnapshot snapshot) {
@@ -61,9 +65,10 @@ public class ChunkDataMessage extends Message {
 		this.blockLight = snapshot.getBlockLight();
 		this.skyLight = snapshot.getSkyLight();
 		this.biomeData = snapshot.getBiomeManager() != null ? snapshot.getBiomeManager().serialize() : null;
+		this.biomeManagerClass = snapshot.getBiomeManager() != null ? snapshot.getBiomeManager().getClass().getCanonicalName() : null;
 	}
 
-	public ChunkDataMessage(int x, int y, int z, short[] blockIds, short[] blockData, byte[] blockLight, byte[] skyLight, byte[] biomeData) {
+	public ChunkDataMessage(int x, int y, int z, short[] blockIds, short[] blockData, byte[] blockLight, byte[] skyLight, byte[] biomeData, String biomeManagerClass) {
 		this.unload = false;
 		this.x = x;
 		this.y = y;
@@ -73,6 +78,7 @@ public class ChunkDataMessage extends Message {
 		this.blockLight = blockLight;
 		this.skyLight = skyLight;
 		this.biomeData = biomeData;
+		this.biomeManagerClass = biomeManagerClass;
 	}
 
 	public boolean isUnload() {
@@ -111,6 +117,10 @@ public class ChunkDataMessage extends Message {
 		return biomeData;
 	}
 
+	public String getBiomeManagerClass() {
+		return biomeManagerClass;
+	}
+
 	@Override
 	public String toString() {
 		return new ToStringBuilder(this, SpoutToStringStyle.INSTANCE)
@@ -123,6 +133,44 @@ public class ChunkDataMessage extends Message {
 				.append("blockLight", blockLight, false)
 				.append("skyLight", skyLight, false)
 				.append("biomeData", biomeData, false)
+				.append("biomeManagerClass", biomeManagerClass)
 				.toString();
+	}
+
+	@Override
+	public int hashCode() {
+		return new HashCodeBuilder(47, 91)
+				.append(unload)
+				.append(x)
+				.append(y)
+				.append(z)
+				.append(blockIds)
+				.append(blockData)
+				.append(blockLight)
+				.append(skyLight)
+				.append(biomeData)
+				.append(biomeManagerClass)
+				.toHashCode();
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj instanceof ChunkDataMessage) {
+			final ChunkDataMessage other = (ChunkDataMessage) obj;
+			return new EqualsBuilder()
+					.append(unload, other.unload)
+					.append(x, other.x)
+					.append(y, other.y)
+					.append(z, other.z)
+					.append(blockIds, other.blockIds)
+					.append(blockData, other.blockData)
+					.append(blockLight, other.blockLight)
+					.append(skyLight, other.skyLight)
+					.append(biomeData, other.biomeData)
+					.append(biomeManagerClass, other.biomeManagerClass)
+					.isEquals();
+		} else {
+			return false;
+		}
 	}
 }

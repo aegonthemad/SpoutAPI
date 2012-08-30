@@ -31,7 +31,7 @@ import java.net.InetSocketAddress;
 
 import org.spout.api.Engine;
 import org.spout.api.map.DefaultedMap;
-import org.spout.api.player.Player;
+import org.spout.api.entity.Player;
 
 /**
  * Represents a connection to the server.<br/>
@@ -135,7 +135,7 @@ public interface Session {
 
 	/**
 	 * Checks if this session has a player connected to it.
-	 * 
+	 *
 	 * @return true if this session has a player.
 	 */
 	public boolean hasPlayer();

@@ -30,7 +30,7 @@ import org.spout.api.event.Cancellable;
 import org.spout.api.event.HandlerList;
 import org.spout.api.geo.discrete.Point;
 import org.spout.api.inventory.ItemStack;
-import org.spout.api.player.Player;
+import org.spout.api.entity.Player;
 
 /**
  * Called when a player interacts with the game world, or an item.
@@ -39,13 +39,9 @@ import org.spout.api.player.Player;
  */
 public class PlayerInteractEvent extends PlayerEvent implements Cancellable {
 	private static final HandlerList handlers = new HandlerList();
-
 	private final Point interactedPoint;
-
 	private final ItemStack heldItem;
-
 	private final Action action;
-
 	private final boolean isAir;
 
 	public PlayerInteractEvent(Player p, Point interactedPoint, ItemStack heldItem, Action action, boolean isAir) {

@@ -29,12 +29,86 @@ package org.spout.api;
 import java.util.Collection;
 import java.util.List;
 
+import org.spout.api.chat.ChatArguments;
+import org.spout.api.entity.Player;
 import org.spout.api.protocol.PortBinding;
 
 /**
  * Represents the server-specific implementation of Minecraft.
  */
 public interface Server extends Engine {
+
+	/**
+	 * Returns all player names that have ever played on this Game, whether they are online or not.
+	 *
+	 * @return all the player names
+	 */
+	public List<String> getAllPlayers();
+
+	/**
+	 * Gets all players currently online
+	 *
+	 * @return array of all active players
+	 */
+	public Player[] getOnlinePlayers();
+
+	/**
+	 * Gets the maximum number of players this game can host, or -1 if infinite
+	 *
+	 * @return max players
+	 */
+	public int getMaxPlayers();
+
+	/**
+	 * Broadcasts the given message to all players
+	 *
+	 * The implementation of broadcast is identical to iterating over
+	 * {@link #getOnlinePlayers()} and invoking {@link Player#sendMessage(Object...)} for
+	 * each player.
+	 *
+	 * @param message to send
+	 */
+	public void broadcastMessage(Object... message);
+
+	/**
+	 * Broadcasts the given message to all players
+	 *
+	 * The implementation of broadcast is identical to calling a {@link org.spout.api.event.server.permissions.PermissionGetAllWithNodeEvent}
+	 * event, iterating over each element in getReceivers, invoking {@link org.spout.api.command.CommandSource#sendMessage(Object...)} for
+	 * each CommandSource.
+	 *
+	 * @param message to send
+	 */
+	public void broadcastMessage(String permission, Object... message);
+
+	/**
+	 * Gets the {@link Player} by the given username. <br/>
+	 * <br/>
+	 * If searching for the exact name, this method will iterate and check for
+	 * exact matches. <br/>
+	 * <br/>
+	 * Otherwise, this method will iterate over over all players and find the closest match
+	 * to the given name, by comparing the length of other player names that
+	 * start with the given parameter. <br/>
+	 * <br/>
+	 * This method is case-insensitive.
+	 *
+	 * @param name to look up
+	 * @param exact Whether to use exact lookup
+	 * @return Player if found, else null
+	 */
+	public Player getPlayer(String name, boolean exact);
+
+	/**
+	 * Matches the given username to all players that contain it in their name.
+	 *
+	 * If no matches are found, an empty collection will be returned. The return
+	 * will always be non-null.
+	 *
+	 * @param name to match
+	 * @return Collection of all possible matches
+	 */
+	public Collection<Player> matchPlayer(String name);
 
 	/**
 	 * Returns true if this server is using a whitelist.
@@ -106,9 +180,50 @@ public interface Server extends Engine {
 	/**
 	 * Bans the specified player
 	 *
-	 * @param player Player to ban
+	 * @param player to ban
 	 */
 	public void banPlayer(String player);
+
+	/**
+	 * Bans the specified player
+	 *
+	 * @param player Player to ban
+	 * @param kick whether to kick the player if online
+	 */
+	public void banPlayer(String player, boolean kick);
+
+	/**
+	 * Bans the specified player
+	 *
+	 * @param player to ban
+	 * @param kick whether to kick if online
+	 * @param reason for ban
+	 */
+	public void banPlayer(String player, boolean kick, Object... reason);
+
+	/**
+	 * Bans the specified player
+	 *
+	 * @param player to ban
+	 */
+	public void banPlayer(Player player);
+
+	/**
+	 * Bans the specified player
+	 *
+	 * @param player to ban
+	 * @param kick whether to kick or not
+	 */
+	public void banPlayer(Player player, boolean kick);
+
+	/**
+	 * Bans the specified player
+	 *
+	 * @param player to ban
+	 * @param kick whether to kick if online
+	 * @param reason for ban
+	 */
+	public void banPlayer(Player player, boolean kick, Object... reason);
 
 	/**
 	 * Unbans the specified player
@@ -122,21 +237,38 @@ public interface Server extends Engine {
 	 *
 	 * @param address Player to ban
 	 */
-	public void banIP(String address);
+	public void banIp(String address);
+
+	/**
+	 * Bans the specified IP
+	 *
+	 * @param address to ban
+	 * @param kick whether to kick all players with specified IP
+	 */
+	public void banIp(String address, boolean kick);
+
+	/**
+	 * Bans the specified IP
+	 *
+	 * @param address to ban
+	 * @param kick whether to kick all players with specified IP
+	 * @param reason for ban
+	 */
+	public void banIp(String address, boolean kick, Object... reason);
 
 	/**
 	 * Unbans the specified IP
 	 *
 	 * @param address Player to ban
 	 */
-	public void unbanIP(String address);
+	public void unbanIp(String address);
 
 	/**
 	 * Gets a collection of all banned IP's, in string format.
 	 *
 	 * @return banned IP addresses
 	 */
-	public Collection<String> getIPBans();
+	public Collection<String> getBannedIps();
 
 	/**
 	 * Returns a collection of all banned players
@@ -146,13 +278,12 @@ public interface Server extends Engine {
 	public Collection<String> getBannedPlayers();
 
 	/**
-	 * Returns true if the player or address is banned.
+	 * Returns true if the player is banned.
 	 *
-	 * @param player Player name to check
-	 * @param address Address to check
-	 * @return If either is banned
+	 * @param player name to check
+	 * @return true if banned
 	 */
-	public boolean isBanned(String player, String address);
+	public boolean isBanned(String player);
 
 	/**
 	 * Returns true if the address is banned.
@@ -160,29 +291,35 @@ public interface Server extends Engine {
 	 * @param address Address to check
 	 * @return If the address is banned
 	 */
-	public boolean isIPBanned(String address);
+	public boolean isIpBanned(String address);
 
 	/**
-	 * Returns true if the player is banned.
-	 *
-	 * @param player Player name to check
-	 * @return If the player is banned
-	 */
-	public boolean isPlayerBanned(String player);
-
-	/**
-	 * Gets the ban message for the player
+	 * Gets the ban message.
 	 *
 	 * @return the ban message
 	 */
-	public String getBanMessage(String player);
+	public ChatArguments getBanMessage();
 
 	/**
-	 * Gets the ban message for the IP
+	 * Sets the ban message.
+	 *
+	 * @param message to set
+	 */
+	public void setBanMessage(Object... message);
+
+	/**
+	 * Gets the ban message.
 	 *
 	 * @return the ban message
 	 */
-	public String getIPBanMessage(String address);
+	public ChatArguments getIpBanMessage();
+
+	/**
+	 * Sets the IP ban message
+	 *
+	 * @param message to set
+	 */
+	public void setIpBanMessage(Object... message);
 
 	/**
 	 * Maps a port for both TCP and UDP communication for Universal Plug and Play enabled InternetGatewayDevices

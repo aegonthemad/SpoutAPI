@@ -116,6 +116,14 @@ public class SecurityHandler {
 		return null;
 	}
 	
+	public PaddedBufferedBlockCipher addSymmetricPadding(BlockCipher rawCipher, String padding) {
+		if (padding.equals("PKCS7")) {
+			return new PaddedBufferedBlockCipher(rawCipher);
+		}
+
+		return null;
+	}
+	
 	private BufferedBlockCipher addSymmetricWrapper(BlockCipher rawCipher, String wrapper) {
 		if (wrapper.startsWith("CFB")) {
 			int bits;
@@ -127,18 +135,10 @@ public class SecurityHandler {
 			}
 			return new BufferedBlockCipher(new CFBBlockCipher(rawCipher, bits));
 		}
-
+	
 		return new BufferedBlockCipher(rawCipher);
 	}
-	
-	public PaddedBufferedBlockCipher addSymmetricPadding(BlockCipher rawCipher, String padding) {
-		if (padding.equals("PKCS7")) {
-			return new PaddedBufferedBlockCipher(rawCipher);
-		}
 
-		return null;
-	}
-	
 	public AsymmetricBlockCipher getAsymmetricCipher(String cipher, String padding) {
 		if (cipher.equals("RSA")) {
 			return addAsymmetricPadding(new RSAEngine(), padding);
@@ -224,14 +224,8 @@ public class SecurityHandler {
 			return pair;
 		}
 
-		SecureRandom secureRandom;
-		try {
-			secureRandom = SecureRandom.getInstance(rngAlgorithm, rngProvider);
-		} catch (NoSuchProviderException e) {
-			Spout.getLogger().info("Unable to find algorithm to for random number generator");
-			return null;
-		} catch (NoSuchAlgorithmException e) {
-			Spout.getLogger().info("Unable to find algorithm to generate random number generator for key pair creation");
+		SecureRandom secureRandom = getSecureRandom(rngAlgorithm, rngProvider);
+		if (secureRandom == null) {
 			return null;
 		}
 
@@ -251,5 +245,21 @@ public class SecurityHandler {
 		}
 
 		return newPair;
+	}
+	
+	private SecureRandom getSecureRandom(String RNGAlgorithm, String RNGProvider) {
+		try {
+			if (RNGProvider != null) {
+				return SecureRandom.getInstance(RNGAlgorithm, RNGProvider);
+			} else {
+				return SecureRandom.getInstance(RNGAlgorithm);
+			}
+		} catch (NoSuchProviderException e) {
+			//Fallback to any provider for the algorithm
+			return getSecureRandom(RNGAlgorithm, null);
+		} catch (NoSuchAlgorithmException e) {
+			Spout.getLogger().severe("Unable to find algorithm to generate random number generator for key pair creation (" + RNGAlgorithm + ", " + RNGProvider + ")");
+			return null;
+		}
 	}
 }

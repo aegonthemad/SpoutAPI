@@ -26,7 +26,7 @@
  */
 package org.spout.api.geo;
 
-import org.spout.api.entity.component.controller.BlockController;
+import org.spout.api.entity.controller.BlockController;
 import org.spout.api.generator.biome.Biome;
 import org.spout.api.material.BlockMaterial;
 import org.spout.api.util.thread.LiveRead;
@@ -109,7 +109,7 @@ public interface AreaBlockSource {
 	 * @param x coordinate of the block
 	 * @param y coordinate of the block
 	 * @param z coordinate of the block
-	 * @return the block controller
+	 * @return the block entity
 	 */
 	@SnapshotRead
 	public BlockController getBlockController(int x, int y, int z);

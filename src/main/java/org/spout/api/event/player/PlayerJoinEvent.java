@@ -26,8 +26,9 @@
  */
 package org.spout.api.event.player;
 
+import org.spout.api.chat.ChatArguments;
 import org.spout.api.event.HandlerList;
-import org.spout.api.player.Player;
+import org.spout.api.entity.Player;
 
 /**
  * Called when a player joins the server, this event can be disallowed to prevent the Player from logging in.<br/>
@@ -35,18 +36,17 @@ import org.spout.api.player.Player;
  */
 public class PlayerJoinEvent extends PlayerEvent {
 	private static HandlerList handlers = new HandlerList();
-
-	private Object[] message;
+	private ChatArguments message;
 
 	public PlayerJoinEvent(Player p, Object... joinMessage) {
 		super(p);
-		this.message = joinMessage;
+		this.message = new ChatArguments(joinMessage);
 	}
 
 	/**
 	 * @return the message that will be broadcast when a player joins, or null for no message
 	 */
-	public Object[] getMessage() {
+	public ChatArguments getMessage() {
 		return message;
 	}
 
@@ -56,7 +56,7 @@ public class PlayerJoinEvent extends PlayerEvent {
 	 * @param message to be set
 	 */
 	public void setMessage(Object... message) {
-		this.message = message;
+		this.message = new ChatArguments(message);
 	}
 
 	@Override

@@ -150,4 +150,9 @@ public abstract class AbstractLayout extends BasicTickable implements Layout {
 			widget.onTick(dt);
 		}
 	}
+
+	@Override
+	public boolean canTick() {
+		return true;
+	}
 }

@@ -26,13 +26,14 @@
  */
 package org.spout.api.inventory;
 
+import org.spout.api.util.LogicUtil;
+
 /**
  * Represents an inventory, usually owned by an entity. In a grid-style
  * inventory, slot ordering starts in the lower-left corner at zero, going
  * left-to-right for each row.
  */
 public class Inventory extends InventoryBase {
-
 	private static final long serialVersionUID = 0L;
 	private final ItemStack[] contents;
 
@@ -40,7 +41,7 @@ public class Inventory extends InventoryBase {
 		this(new ItemStack[size]);
 	}
 
-	public Inventory(ItemStack[] contents) {
+	public Inventory(ItemStack... contents) {
 		this.contents = contents;
 	}
 
@@ -50,38 +51,19 @@ public class Inventory extends InventoryBase {
 	}
 
 	@Override
-	public ItemStack[] getContents() {
-		return contents;
-	}
-
-	@Override
 	public ItemStack getItem(int slot) {
 		this.checkSlotRange(slot);
-		if (contents[slot] == null) {
-			return null;
-		}
-
-		return contents[slot].clone();
+		return ItemStack.cloneSpecial(contents[slot]);
 	}
 
 	@Override
 	public void setItem(int slot, ItemStack item) {
 		this.checkSlotRange(slot);
-		contents[slot] = item == null || item.getAmount() == 0 ? null : item.clone();
-		if (this.getNotifyViewers()) {
-			this.notifyViewers(slot, item);
+		item = ItemStack.cloneSpecial(item);
+		if (LogicUtil.bothNullOrEqual(item, contents[slot])) {
+			return;
 		}
-		this.onSlotChanged(slot, item);
-	}
-
-	@Override
-	public void setContents(ItemStack[] contents) {
-		for (int i = 0; i < this.contents.length; i++) {
-			this.contents[i] = contents[i];
-			this.onSlotChanged(i, contents[i]);
-		}
-		if (this.getNotifyViewers()) {
-			this.notifyViewers();
-		}
+		contents[slot] = item;
+		this.notifyItemChange(slot);
 	}
 }

@@ -37,16 +37,18 @@ import java.util.logging.Logger;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.group.ChannelGroup;
 
+import org.spout.api.chat.completion.CompletionManager;
+import org.spout.api.chat.console.MultiConsole;
 import org.spout.api.command.Command;
 import org.spout.api.command.CommandSource;
-import org.spout.api.command.RootCommand;
+import org.spout.api.command.SyncedRootCommand;
 import org.spout.api.entity.Entity;
 import org.spout.api.event.EventManager;
 import org.spout.api.generator.WorldGenerator;
 import org.spout.api.geo.World;
 import org.spout.api.inventory.RecipeManager;
 import org.spout.api.permissions.PermissionsSubject;
-import org.spout.api.player.Player;
+import org.spout.api.entity.Player;
 import org.spout.api.plugin.Platform;
 import org.spout.api.plugin.PluginManager;
 import org.spout.api.plugin.ServiceManager;
@@ -85,51 +87,6 @@ public interface Engine extends Named {
 	public String getVersion();
 
 	/**
-	 * Returns all player names that have ever played on this Game, whether they are online or not.
-	 *
-	 * @return all the player names
-	 */
-	public List<String> getAllPlayers();
-
-	/**
-	 * Gets all players currently online
-	 *
-	 * @return array of all active players
-	 */
-	public Player[] getOnlinePlayers();
-
-	/**
-	 * Gets the maximum number of players this game can host, or -1 if infinite
-	 *
-	 * @return max players
-	 */
-	public int getMaxPlayers();
-
-	/**
-	 * Broadcasts the given message to all players
-	 *
-	 * The implementation of broadcast is identical to iterating over
-	 * {@link #getOnlinePlayers()} and invoking {@link Player#sendMessage(Object...)} for
-	 * each player.
-	 *
-	 * @param message to send
-	 */
-	public void broadcastMessage(Object... message);
-
-	/**
-	 * Broadcasts the given single-string message to all players.
-	 * Should be implemented as <code>broadcastMessage(new Object[] {message})</code>
-	 * This method is purely a workaround for the way Java chooses which method to call
-	 * in ambiguous situations, which would result in calls with a single string intended for
-	 * {@link #broadcastMessage(Object...)} having their string argument passed to
-	 * {@link #broadcastMessage(String, Object...)} as the permission
-	 *
- 	 * @see #broadcastMessage(Object...)
-	 * @param message The single-string message
-	 */
-	public void broadcastMessage(String message);
-
-	/**
 	 * Returns a Set of all permissions subjects with the provided node. Plugins wishing
 	 * to modify the result of this event should listen to the {@link org.spout.api.event.server.permissions.PermissionGetAllWithNodeEvent} event.
 	 *
@@ -137,17 +94,6 @@ public interface Engine extends Named {
 	 * @return Every {@link PermissionsSubject} with the specified node
 	 */
 	public Set<PermissionsSubject> getAllWithNode(String permission);
-
-	/**
-	 * Broadcasts the given message to all players
-	 *
-	 * The implementation of broadcast is identical to calling a {@link org.spout.api.event.server.permissions.PermissionGetAllWithNodeEvent}
-	 * event, iterating over each element in getReceivers, invoking {@link CommandSource#sendMessage(Object...)} for
-	 * each CommandSource.
-	 *
-	 * @param message to send
-	 */
-	public void broadcastMessage(String permission, Object... message);
 
 	/**
 	 * Gets singleton instance of the plugin manager, used to interact with
@@ -189,6 +135,13 @@ public interface Engine extends Named {
 	public File getDataFolder();
 
 	/**
+	 * Gets the folder which contains plugins.
+	 * 
+	 * @return {@link File} of the plugin folder.
+	 */
+	public File getPluginFolder();
+
+	/**
 	 * Creates a new Session
 	 *
 	 * @param channel the associated channel
@@ -204,39 +157,10 @@ public interface Engine extends Named {
 	 * been searched upon failure.
 	 *
 	 * @param uid to search and match
-	 * @return {@link entity} that matched the uid, or null if none was found
+	 * @return {@link Entity} that matched the uid, or null if none was found
 	 */
 	@SnapshotRead
 	public Entity getEntity(UUID uid);
-
-	/**
-	 * Gets the {@link Player} by the given username. <br/>
-	 * <br/>
-	 * If searching for the exact name, this method will iterate and check for
-	 * exact matches. <br/>
-	 * <br/>
-	 * Otherwise, this method will iterate over over all players and find the closest match
-	 * to the given name, by comparing the length of other player names that
-	 * start with the given parameter. <br/>
-	 * <br/>
-	 * This method is case-insensitive.
-	 *
-	 * @param name to look up
-	 * @param exact Whether to use exact lookup
-	 * @return Player if found, else null
-	 */
-	public Player getPlayer(String name, boolean exact);
-
-	/**
-	 * Matches the given username to all players that contain it in their name.
-	 *
-	 * If no matches are found, an empty collection will be returned. The return
-	 * will always be non-null.
-	 *
-	 * @param name to match
-	 * @return Collection of all possible matches
-	 */
-	public Collection<Player> matchPlayer(String name);
 
 	/**
 	 * Searches for an actively loaded world that exactly matches the given
@@ -381,7 +305,7 @@ public interface Engine extends Named {
 	 * data is saved, and all threads are ended cleanly.<br/>
 	 * <br/>
 	 * Players will be sent a default disconnect message.
-	 * 
+	 *
 	 * @return true for for the first stop
 	 */
 	public boolean stop();
@@ -400,7 +324,7 @@ public interface Engine extends Named {
 	/**
 	 * Gets the world folders which match the world name.
 	 *
-	 * @param name to match the world folders with
+	 * @param worldName to match the world folders with
 	 * @return the world folders that match the world name
 	 */
 	public Collection<File> matchWorldFolder(String worldName);
@@ -430,7 +354,7 @@ public interface Engine extends Named {
 	 *
 	 * @return the {@link Engine}'s root {@link Command}
 	 */
-	public RootCommand getRootCommand();
+	public SyncedRootCommand getRootCommand();
 
 	/**
 	 * Returns the game's {@link EventManager} Event listener registration and
@@ -574,4 +498,26 @@ public interface Engine extends Named {
 
 	public String getVariable(String key);
 
+	/**
+	 * Gets the command source that prints to the console<br/>
+	 * Can be used to print colored text to the console
+	 *
+	 * @return the console command source
+	 */
+	public CommandSource getCommandSource();
+
+	/**
+	 * Gets the console collection that the engine is currently using.
+	 * This can be used to modify console output and print raw text to the console
+	 *
+	 * @return The engine's console collection
+	 */
+	public MultiConsole getConsoles();
+
+	/**
+	 * Get the manager responsible for completions
+	 *
+	 * @return The completion manager
+	 */
+	public CompletionManager getCompletionManager();
 }

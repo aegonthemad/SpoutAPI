@@ -48,7 +48,7 @@ import org.spout.api.geo.discrete.Point;
 import org.spout.api.material.BlockMaterial;
 import org.spout.api.math.IntVector3;
 import org.spout.api.math.Quaternion;
-import org.spout.api.player.Player;
+import org.spout.api.entity.Player;
 import org.spout.api.protocol.event.ProtocolEvent;
 import org.spout.api.protocol.event.ProtocolEventExecutor;
 import org.spout.api.protocol.event.ProtocolEventListener;
@@ -565,27 +565,14 @@ public abstract class NetworkSynchronizer {
 	}
 
 	/**
-	 * Instructs the client to spawn the entity
+	 * Instructs the client to update the entities state and position<br><br>
 	 *
 	 * @param e the entity
+	 * @param spawn is True when the entity just spawned
+	 * @param destroy is True when the entity just got destroyed
+	 * @param update is True when the entity is being updated
 	 */
-	public void spawnEntity(Entity e) {
-	}
-
-	/**
-	 * Instructs the client to destroy the entity
-	 *
-	 * @param e the entity
-	 */
-	public void destroyEntity(Entity e) {
-	}
-
-	/**
-	 * Instructs the client to update the entities state and position
-	 *
-	 * @param e the entity
-	 */
-	public void syncEntity(Entity e) {
+	public void syncEntity(Entity e, boolean spawn, boolean destroy, boolean update) {
 	}
 
 	/**

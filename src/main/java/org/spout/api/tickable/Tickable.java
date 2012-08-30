@@ -29,42 +29,34 @@ package org.spout.api.tickable;
 public interface Tickable {
 	/**
 	 * Called each simulation tick.<br/>
+	 * Override this to perform logic upon ticking.<br/>
 	 * 1       tick  = 1/20 second<br/>
 	 * 20      ticks = 1 second<br/>
 	 * 1200    ticks = 1 minute<br/>
 	 * 72000   ticks = 1 hour<br/>
 	 * 1728000 ticks = 1 day
-	 *
 	 * @param dt time since the last tick in seconds
 	 */
 	public void onTick(float dt);
 
 	/**
-	 * Called each simulation tick.<br/>
+	 * Whether or not this tickable can perform a tick
+	 * @return true if it can tick, false if not
+	 */
+	public boolean canTick();
+
+	/**
+	 * Ticks the Tickable.<br/>
+	 * Call this to make the Tickable tick.<br/>
+	 * 
+	 * Standard implementation is if(canTick()) { onTick(dt); }<br/>
+	 * 
 	 * 1       tick  = 1/20 second<br/>
 	 * 20      ticks = 1 second<br/>
 	 * 1200    ticks = 1 minute<br/>
 	 * 72000   ticks = 1 hour<br/>
 	 * 1728000 ticks = 1 day
-	 * Handles the active processes in the Tickable and calls {@link BasicTickable#onTick(float)}
-	 * 
 	 * @param dt time since the last tick in seconds
 	 */
 	public void tick(float dt);
-
-	/**
-	 * Registers a new process for the Tickable.
-	 * Calls {@link LogicRunnable#onRegistration()}
-	 * @param process
-	 * @return the process
-	 */
-	public <T extends LogicRunnable<?>> T registerProcess(T process);
-
-	/**
-	 * Unregisters a process for the Tickable.
-	 * Calls {@link LogicRunnable#onUnregistration()}
-	 * @param process
-	 * @return the process
-	 */
-	public <T extends LogicRunnable<?>> T unregisterProcess(T process);
 }

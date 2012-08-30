@@ -188,6 +188,16 @@ public class ItemStack extends GenericMaterialAccess implements Serializable, Cl
 		return this;
 	}
 
+	/**
+	 * If the item is null or empty, null is returned, otherwise the item is cloned
+	 * 
+	 * @param item to clone
+	 * @return null, or the cloned item
+	 */
+	public static ItemStack cloneSpecial(ItemStack item) {
+		return item == null || item.isEmpty() ? null : item.clone();
+	}
+
 	@Override
 	public ItemStack clone() {
 		ItemStack newStack = new ItemStack(material, data, amount, auxData);
@@ -347,6 +357,7 @@ public class ItemStack extends GenericMaterialAccess implements Serializable, Cl
 			out.writeBoolean(true);
 			NBTOutputStream os = new NBTOutputStream(out, false);
 			os.writeTag(new CompoundTag("nbtData", nbtData));
+			os.close();
 		} else {
 			out.writeBoolean(false);
 		}
@@ -373,6 +384,7 @@ public class ItemStack extends GenericMaterialAccess implements Serializable, Cl
 			NBTInputStream is = new NBTInputStream(in, false);
 			CompoundTag tag = (CompoundTag) is.readTag();
 			nbtData = tag.getValue();
+			is.close();
 		}
 		
 		if (material == null) throw new ClassNotFoundException("No material matching {" + matId + ", " + matData + "} was found!");

@@ -57,6 +57,6 @@ public class DataSubjectTest implements DataSubject {
 
 	@Override
 	public String getName() {
-		return "TestSubject";
+		return "DataSubjectTest";
 	}
 }

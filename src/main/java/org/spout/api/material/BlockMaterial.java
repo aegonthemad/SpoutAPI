@@ -26,13 +26,16 @@
  */
 package org.spout.api.material;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import org.spout.api.collision.BoundingBox;
 import org.spout.api.collision.CollisionModel;
 import org.spout.api.collision.CollisionStrategy;
 import org.spout.api.collision.CollisionVolume;
 import org.spout.api.entity.Entity;
-import org.spout.api.entity.component.controller.BlockController;
-import org.spout.api.entity.component.controller.type.ControllerType;
+import org.spout.api.entity.controller.BlockController;
+import org.spout.api.entity.controller.type.ControllerType;
 import org.spout.api.event.player.PlayerInteractEvent.Action;
 import org.spout.api.geo.cuboid.Block;
 import org.spout.api.material.basic.BasicAir;
@@ -42,7 +45,8 @@ import org.spout.api.material.block.BlockFaces;
 import org.spout.api.material.range.EffectRange;
 import org.spout.api.math.MathHelper;
 import org.spout.api.math.Vector3;
-import org.spout.api.util.flag.ByteFlagContainer;
+import org.spout.api.util.bytebit.ByteBitSet;
+import org.spout.api.util.flag.Flag;
 
 /**
  * Defines the specific characteristics of a Block
@@ -106,7 +110,7 @@ public class BlockMaterial extends Material implements Placeable {
 		return (BlockMaterial) mat;
 	}
 
-	private ByteFlagContainer occlusion = new ByteFlagContainer(BlockFaces.NESWBT);
+	private ByteBitSet occlusion = new ByteBitSet(BlockFaces.NESWBT);
 	private float hardness = 0F;
 	private float friction = 0F;
 	private byte opacity = 0xF;
@@ -114,8 +118,8 @@ public class BlockMaterial extends Material implements Placeable {
 	private ControllerType controller = null;
 
 	/**
-	 * Sets the block controller associated with this material<br>
-	 * Future calls to getController will return an instance of this block controller.
+	 * Sets the block entity associated with this material<br>
+	 * Future calls to getController will return an instance of this block entity.
 	 * 
 	 * @param controller type to set to
 	 * @return This block material
@@ -127,15 +131,15 @@ public class BlockMaterial extends Material implements Placeable {
 
 	/**
 	 * Gets whether this Block Material has a Block Controller associated with it.
-	 * @return True if it has a block controller
+	 * @return True if it has a block entity
 	 */
 	public boolean hasController() {
 		return this.controller != null;
 	}
 
 	/**
-	 * Gets the block controller associated with this material from a block<br>
-	 * If the block controller set is null or does not match, a new instance is created and set on the block and returned
+	 * Gets the block entity associated with this material from a block<br>
+	 * If the block entity set is null or does not match, a new instance is created and set on the block and returned
 	 * 
 	 * @param block to get the Block Controller of
 	 * @return The Block Controller
@@ -145,12 +149,12 @@ public class BlockMaterial extends Material implements Placeable {
 	}
 
 	/**
-	 * Gets the block controller associated with this material from a block<br>
-	 * If the block controller set is null or does not match, null is returned<br>
-	 * If forced is set True, the controller is forcibly replaced with the one set in this material and is returned
+	 * Gets the block entity associated with this material from a block<br>
+	 * If the block entity set is null or does not match, null is returned<br>
+	 * If forced is set True, the entity is forcibly replaced with the one set in this material and is returned
 	 * 
 	 * @param block to get the Block Controller of
-	 * @param forced whether to force-convert the controller if not found or invalid
+	 * @param forced whether to force-convert the entity if not found or invalid
 	 * @return The Block Controller
 	 */
 	public BlockController getController(Block block, boolean forced) {
@@ -353,7 +357,32 @@ public class BlockMaterial extends Material implements Placeable {
 	}
 
 	/**
-	 * Called when this block has been destroyed.
+	 * Performs the block destroy procedure without initial flags
+	 * 
+	 * @param block to destroy
+	 * @return True if destroying was successful
+	 */
+	public boolean destroy(Block block) {
+		return this.destroy(block, new HashSet<Flag>());
+	}
+
+	/**
+	 * Performs the block destroy procedure
+	 * 
+	 * @param block to destroy
+	 * @param flags to initially use for destruction
+	 * @return True if destroying was successful
+	 */
+	public boolean destroy(Block block, Set<Flag> flags) {
+		this.getBlockFlags(block, flags);
+		this.onDestroy(block);
+		this.onPostDestroy(block, flags);
+		return true;
+	}
+
+	/**
+	 * Called when this block has to be destroyed.<br>
+	 * This function performs the actual destruction of the block.
 	 * 
 	 * @param block that got destroyed
 	 */
@@ -362,6 +391,26 @@ public class BlockMaterial extends Material implements Placeable {
 		if (this.hasController()) {
 			block.getRegion().setBlockController(block.getX(), block.getY(), block.getZ(), null);
 		}
+	}
+
+	/**
+	 * Called after this block has been destroyed.<br>
+	 * This function performs possible post-destroy operations, such as effects.
+	 * 
+	 * @param block of the material that got destroyed
+	 * @param flags describing the destroy situation
+	 */
+	public void onPostDestroy(Block block, Set<Flag> flags) {
+	}
+
+	/**
+	 * Gets all the flags associated with this Material as a Block<br>
+	 * The flags are added to the input collection
+	 * 
+	 * @param block of this Material
+	 * @param flags to add to
+	 */
+	public void getBlockFlags(Block block, Set<Flag> flags) {
 	}
 
 	/**
@@ -409,7 +458,7 @@ public class BlockMaterial extends Material implements Placeable {
 	 * @param data value of the material
 	 * @return the occluded faces
 	 */
-	public ByteFlagContainer getOcclusion(short data) {
+	public ByteBitSet getOcclusion(short data) {
 		return this.occlusion;
 	}
 
