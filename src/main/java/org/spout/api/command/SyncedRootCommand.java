@@ -40,7 +40,7 @@ import org.spout.api.util.StringMap;
 public class SyncedRootCommand extends RootCommand {
 	private final StringMap commandNameRegistration;
 
-	public SyncedRootCommand(Engine owner) {
+	public SyncedRootCommand(Named owner) {
 		super(owner);
 		commandNameRegistration = new StringMap(null, new MemoryStore<Integer>(), 0, Integer.MAX_VALUE, "commands" + getPreferredName());
 	}
