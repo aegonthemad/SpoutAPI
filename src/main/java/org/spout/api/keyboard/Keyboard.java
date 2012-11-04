@@ -200,21 +200,6 @@ public enum Keyboard {
 	}
 	
 	/**
-	 * Checks for new keyboard events
-	 */
-	public static void doEventCheck() {
-		while(org.lwjgl.input.Keyboard.next()) {
-			Keyboard key = getKey(org.lwjgl.input.Keyboard.getEventKey());
-			boolean pressed = org.lwjgl.input.Keyboard.getEventKeyState();
-			pressedCache[key.getKeyCode()] = pressed;
-			char character = org.lwjgl.input.Keyboard.getEventCharacter();
-			long time = org.lwjgl.input.Keyboard.getEventNanoseconds();
-			KeyEvent event = new KeyEvent(key, pressed, character, time);
-			eventQueue.offer(event);
-		}
-	}
-	
-	/**
 	 * Clears the pressed cache
 	 * This will simulate a keyrelease event for all keys that are currently down.
 	 * This is useful when there is a sticky-key problem when the instance loses focus.
