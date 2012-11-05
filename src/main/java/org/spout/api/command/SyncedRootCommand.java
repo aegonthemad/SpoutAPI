@@ -29,7 +29,6 @@ package org.spout.api.command;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.spout.api.Engine;
 import org.spout.api.io.store.simple.MemoryStore;
 import org.spout.api.util.Named;
 import org.spout.api.util.StringMap;
